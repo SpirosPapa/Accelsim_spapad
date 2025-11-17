@@ -1,0 +1,49 @@
+root@1cf21fb1124e:/accel-sim-framework/util/tuner/NVIDIA_A30_MIG_2g.12gb_not_me# diff ./gpgpusim.config ../NVIDIA_A30_MIG_2g.12gb/gpgpusim.config 
+11c11
+< -gpgpu_kernel_launch_latency  12410
+---
+> -gpgpu_kernel_launch_latency  8693
+139,140c139,140
+< -gpgpu_l2_rop_latency 164
+< -dram_latency 149
+---
+> -gpgpu_l2_rop_latency 165
+> -dram_latency 147
+root@1cf21fb1124e:/accel-sim-framework/util/tuner/NVIDIA_A30_MIG_2g.12gb_not_me# diff ./gpgpusim.config ../NVIDIA_A30_MIG_1g.6gb/gpgpusim.config 
+11c11
+< -gpgpu_kernel_launch_latency  12410
+---
+> -gpgpu_kernel_launch_latency  7848
+23c23
+< -gpgpu_n_clusters 28
+---
+> -gpgpu_n_clusters 14
+25c25
+< -gpgpu_n_mem 12
+---
+> -gpgpu_n_mem 6
+139,140c139,140
+< -gpgpu_l2_rop_latency 164
+< -dram_latency 149
+---
+> -gpgpu_l2_rop_latency 163
+> -dram_latency 144
+root@1cf21fb1124e:/accel-sim-framework/util/tuner/NVIDIA_A30_MIG_2g.12gb_not_me# diff ./gpgpusim.config ../NVIDIA_A30_MIG_4g.24gb/gpgpusim.config 
+11c11
+< -gpgpu_kernel_launch_latency  12410
+---
+> -gpgpu_kernel_launch_latency  13148
+23c23
+< -gpgpu_n_clusters 28
+---
+> -gpgpu_n_clusters 56
+25c25
+< -gpgpu_n_mem 12
+---
+> -gpgpu_n_mem 24
+139,140c139,140
+< -gpgpu_l2_rop_latency 164
+< -dram_latency 149
+---
+> -gpgpu_l2_rop_latency 171
+> -dram_latency 185

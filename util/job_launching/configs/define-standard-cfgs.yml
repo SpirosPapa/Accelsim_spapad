@@ -15,6 +15,25 @@ TITANK:
 RTX3070:
     base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/SM86_RTX3070/gpgpusim.config"
 
+
+A30:
+   base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/NVIDIA_A30/gpgpusim.config"
+
+A30_MIG_1g.6gb:
+   base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/NVIDIA_A30_MIG_1g.6gb/gpgpusim.config"
+
+A30_MIG_1g.6gb+me:
+   base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/NVIDIA_A30_MIG_1g.6gb+me/gpgpusim.config"
+
+
+A30_MIG_2g.12gb:
+   base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/NVIDIA_A30_MIG_2g.12gb/gpgpusim.config"
+
+A30_MIG_4g.24gb:
+   base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/NVIDIA_A30_MIG_4g.24gb/gpgpusim.config"
+
+
+
 #Turing
 RTX2060:
     base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/SM75_RTX2060/gpgpusim.config"
@@ -42,8 +61,8 @@ QV100_old:
 GV100:
     base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/SM7_GV100/gpgpusim.config"
 
-A100:
-    base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/SM80_A100/gpgpusim.config"
+V100:
+    base_file: "$GPGPUSIM_ROOT/configs/tested-cfgs/V100/gpgpusim.config"
 
 # Fermi
 GTX480:
@@ -119,7 +138,7 @@ BOOKSIM:
     extra_params: "-gpgpu_clock_domains 1132.0:1132.0:1132.0:850.0"
 
 LINEAR:
-    extra_params: "-gpgpu_memory_partition_indexing 0"
+    extra_params: "-gpgpu_memory_partition_indexing 0" #"-gpgpu_mem_addr_mapping dramid@7;00000000.00000000.00000000.00000000.0000RRRR.RRRRRRRR.RBBBCCCC.BCCSSSSS"
 
 XOR:
     extra_params: "-gpgpu_memory_partition_indexing 1"
@@ -131,7 +150,7 @@ PAE:
     extra_params: "-gpgpu_memory_partition_indexing 3"
 
 IPOLY:
-    extra_params: "-gpgpu_memory_partition_indexing 2"
+    extra_params: "-gpgpu_memory_partition_indexing 2" #"-gpgpu_mem_addr_mapping dramid@8;00000000.00000000.00000000.00000000.0000RRRR.RRRRRRRR.RBBBCCCB.CCCSSSSS"
 
 VISUAL:
     extra_params: "-visualizer_enabled 1"

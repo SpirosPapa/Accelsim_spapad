@@ -77,7 +77,7 @@ class ConfigurationSpec:
         self.run_subdir = name
         self.params = params
         self.config_file = config_file
-
+        self.orig_config_file = config_file  # <--MY ADDITION
     def my_print(self):
         print("Run Subdir = " + self.run_subdir)
         print("Parameters = " + self.params)
@@ -377,9 +377,8 @@ class ConfigurationSpec:
             )
         open(os.path.join(this_run_dir, job_template), "w").write(torque_text)
         exec_line = torque_text.splitlines()[-1]
-        justrunfile = os.path.join(this_run_dir , "justrun.sh")
-        # open(justrunfile, 'w').write(exec_name + " " + txt_args + "\n")
-        open(justrunfile, 'w').write(exec_name + " " + txt_args + " | tee gpgpu-sim-out_`date '+%b_%d_%H:%M.%S'`.txt")
+        justrunfile = os.path.join(this_run_dir, "justrun.sh")
+        open(justrunfile, "w").write(exec_name + " " + txt_args + "\n")
         os.chmod(justrunfile, 0o744)
 
     # replaces all the "REPLACE_*" strings in the gpgpusim.config file
@@ -411,7 +410,9 @@ class ConfigurationSpec:
             config_text += "\n" + "-hw_perf_bench_name " + bench_name + "\n"
 
         if options.trace_dir != "":
-            cfgsubdir = re.sub(r".*(configs.*)gpgpusim.config", r"\1", config_text_file)
+            #MY ADDITION
+            cfgsubdir = re.sub(r".*(configs.*)gpgpusim.config", r"\1", self.orig_config_file)
+            #
             config_text += "\n" + "# Accel-Sim Parameters" + "\n"
             accelsim_cfg = os.path.expandvars(
                 os.path.join("$ACCELSIM_ROOT", cfgsubdir, "trace.config")
@@ -530,9 +531,27 @@ benchmarks = []
 benchmarks = common.gen_apps_from_suite_list(options.benchmark_list.split(","))
 
 cfgs = common.gen_configs_from_list(options.configs_list.split(","))
+
 configurations = []
 for config in cfgs:
     configurations.append(ConfigurationSpec(config))
+
+# ---- MIG CONFIG SUPPORT ----
+if options.mig is not None:
+    for conf in configurations:
+        orig = conf.config_file
+        sm_base = None
+        match = re.search(r'(SM\d+_[^/]+)', orig)
+        if match:
+            sm_base = match.group(1)
+        else:
+            print(f"[MIG] Could not parse SM base from {orig}")
+            continue
+        configs_root = os.path.dirname(os.path.dirname(os.path.dirname(orig)))
+        mig_cfg = os.path.join(configs_root, 'untested-cfgs', f'{sm_base}_MIG', options.mig, 'gpgpusim.config')
+        conf.config_file = mig_cfg
+        print(f"[MIG] Using MIG config: {conf.config_file}")
+
 
 print(
     "Running Simulations with GPGPU-Sim built from \n{0}\n ".format(version_string)

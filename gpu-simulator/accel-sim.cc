@@ -228,3 +228,119 @@ gpgpu_sim *accel_sim_framework::gpgpu_trace_sim_init_perf_model(
 
   return m_gpgpu_context->the_gpgpusim->g_the_gpu;
 }
+
+
+/// NEW IMPLEMENTATIONS
+
+
+// void accel_sim_framework::build_gpu_once(int argc, const char **argv) {
+//   if (m_gpgpu_sim) return;               // already built
+
+//   std::cout << "Accel-Sim [build " << g_accelsim_version << "]";
+//   m_gpgpu_context = new gpgpu_context();
+
+//   // Build the simulator from -config (argv may or may not include -trace).
+//   m_gpgpu_sim =
+//       gpgpu_trace_sim_init_perf_model(argc, argv, m_gpgpu_context, &tconfig);
+//   m_gpgpu_sim->init();
+// }
+
+void accel_sim_framework::build_gpu_once(int argc, const char **argv) {
+  if (m_gpgpu_sim) return;
+
+  std::cout << "Accel-Sim [build " << g_accelsim_version << "]";
+  m_gpgpu_context = new gpgpu_context();
+
+  // Detect -config path and synthesize a matching -trace_config if missing
+  std::string cfg_path, cfg_dir;
+  bool has_trace_opt = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "-config" && i + 1 < argc) {
+      cfg_path = argv[i + 1];
+    }
+    if (std::string(argv[i]) == "-trace" || std::string(argv[i]) == "-trace_config") {
+      has_trace_opt = true;
+    }
+  }
+  // derive directory of gpgpusim.config
+  if (!cfg_path.empty()) {
+    auto pos = cfg_path.find_last_of("/\\");
+    cfg_dir = (pos == std::string::npos) ? "." : cfg_path.substr(0, pos);
+  }
+
+  std::vector<const char*> av;
+  av.reserve(static_cast<size_t>(argc) + 4);
+  for (int i = 0; i < argc; ++i) av.push_back(argv[i]);
+  std::string trace_cfg_full;
+  // if (!has_trace_opt && !cfg_dir.empty()) {
+  //   trace_cfg_full = cfg_dir + "/trace.config";
+  //   av.push_back("-trace_config");
+  //   av.push_back(trace_cfg_full.c_str());
+  // }
+  int argc_local = static_cast<int>(av.size());
+
+  m_gpgpu_sim = gpgpu_trace_sim_init_perf_model(argc_local, av.data(),
+                                                 m_gpgpu_context, &tconfig);
+  m_gpgpu_sim->init();
+}
+
+
+
+
+void accel_sim_framework::load_trace(const std::string& trace_path) {
+  // Bind parser to the incoming job’s trace dir / commandlist
+  //tconfig.set_traces_filename(trace_path.c_str());  
+  tracer = trace_parser(trace_path.c_str());
+  tconfig.parse_config();      // reads trace.config associated with this trace
+  init_job_state_();           // sets window, loads commandlist, clears vectors
+}
+
+void accel_sim_framework::init_job_state_() {
+  active = false;
+  sim_cycles = false;
+  commandlist_index = 0;
+
+  assert(m_gpgpu_context);
+  assert(m_gpgpu_sim);
+
+  concurrent_kernel_sm =
+      m_gpgpu_sim->getShaderCoreConfig()->gpgpu_concurrent_kernel_sm;
+  window_size = concurrent_kernel_sm
+                  ? m_gpgpu_sim->get_config().get_max_concurrent_kernel()
+                  : 1;
+  assert(window_size > 0);
+
+  busy_streams.clear();
+  kernels_info.clear();
+  commandlist = tracer.parse_commandlist_file();
+  kernels_info.reserve(window_size);
+}
+
+void accel_sim_framework::run_one_job() {
+  simulation_loop();          
+}
+
+void accel_sim_framework::soft_reset_for_next_job() {
+  active = false;
+  sim_cycles = false;
+  commandlist_index = 0;
+  busy_streams.clear();
+  kernels_info.clear();
+  commandlist.clear();
+
+  // to be implemented
+  // m_gpgpu_sim->get_stats()->reset();          
+  // m_gpgpu_sim->reset_cycle_counters();      
+  // m_gpgpu_context->the_gpgpusim->g_stream_manager->reset(); 
+}
+
+accel_sim_framework::accel_sim_framework()
+  : m_gpgpu_context(nullptr),
+    tracer(""),                 
+    m_gpgpu_sim(nullptr),
+    concurrent_kernel_sm(false),
+    active(false),
+    sim_cycles(false),
+    window_size(0),
+    commandlist_index(0) {
+}

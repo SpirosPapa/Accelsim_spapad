@@ -20,6 +20,7 @@
 
 class accel_sim_framework {
  public:
+  accel_sim_framework();  // An empty constructor
   accel_sim_framework(int argc, const char **argv);
   accel_sim_framework(std::string config_file, std::string trace_file);
 
@@ -42,6 +43,8 @@ class accel_sim_framework {
 
     kernels_info.reserve(window_size);
   }
+  // NEW: build GPU once (from -config); do NOT bind a trace here
+  void build_gpu_once(int argc, const char **argv);
   void simulation_loop();
   void parse_commandlist();
   void cleanup(unsigned finished_kernel);
@@ -54,8 +57,12 @@ class accel_sim_framework {
                                   gpgpu_context *m_gpgpu_context,
                                   trace_config *m_config);
 
-
+  // NEW: per-job operations
+  void load_trace(const std::string& trace_path);   // points tracer to a job
+  void run_one_job();                                // blocks until job done
+  void soft_reset_for_next_job();                    // clears runtime state only
  private:
+  void init_job_state_(); 
   gpgpu_context *m_gpgpu_context;
   trace_config tconfig;
   trace_parser tracer;

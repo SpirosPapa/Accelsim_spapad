@@ -1,0 +1,192 @@
+#include "execution_engine.h"
+
+
+#include <sys/stat.h>
+#include <unistd.h>
+
+
+#include <cassert>
+#include <cstdio>
+#include <iostream>
+
+#include "../gpgpusim_entrypoint.h" 
+#include "../gpgpu-sim/gpu-sim.h" 
+#include "../stream_manager.h"
+#include "../libcuda/gpgpu_context.h" 
+
+namespace {
+static inline void log(const char* s) { std::cerr << "[engine] " << s << "
+"; }
+static inline void logs(const std::string& s) { log(s.c_str()); }
+}
+
+bool ExecutionEngine::file_exists(const std::string& p) const {
+    struct stat st{}; return ::stat(p.c_str(), &st) == 0; 
+}
+
+bool ExecutionEngine::initialize(const std::string& cfg_path){
+    (void) cfg_path;
+    logs("Initialize: building device once");
+    ctx_ = GPGPU_Context();
+    gpgpu_sim* gpu = gpgpu_ptx_sim_init_perf();
+    if(!gpu){
+        logs("ERROR: gpgpu_ptx_sim_init_perf() returned null");
+        return false;
+    } 
+    // Ensure the _cuda_device_id is registered in the global context (libcuda path does this)
+    if (!ctx_->the_gpgpusim->the_cude_device) {
+        // Allocate device id wrapper if missing
+        // Note: _cuda_device_id is declared in libcuda includes; ctor takes gpgpu_sim*
+        ctx_->the_gpgpusim->the_cude_device = new _cuda_device_id(gpu);
+    }
+    gpu_ = gpu;
+    return true; 
+}
+
+bool ExecutionEngine::reset (){
+    logs("reset: new CUctx_st and cold state");
+    if (ctx_->the_gpgpusim->the_context) {
+        delete ctx_->the_gpgpusim->the_context; 
+        ctx_->the_gpgpusim->the_context = nullptr;
+    }
+    _cuda_device_id* dev = ctx_->the_gpgpusim->the_cude_device;
+    assert(dev && "_cuda_device_id must exist after initialize()");
+    ctx_->the_gpgpusim->the_context = new CUctx_st(dev);
+    if (gpu_) {
+        gpu_->reset_stats();
+        gpu_->gpu_reset(); 
+    }
+    return true;
+}
+
+bool ExecutionEngine::bind(const GpuContext& ctx) {
+    current_trace_dir_ = ctx.trace_dir;
+
+
+    const std::string kernels = current_trace_dir_ + "/kernelslist.g";
+    if (!file_exists(kernels)) {
+    logs("ERROR: kernelslist.g not found in trace_dir");
+    return false;
+    }
+
+
+    // Access the new job's stream manager via the fresh CUctx_st
+    CUctx_st* cu = ctx_->the_gpgpusim->the_context;
+    if (!cu) { logs("ERROR: CUctx_st missing after reset()"); return false; }
+    stream_manager* sm = cu->get_stream_manager();
+    if (!sm) { logs("ERROR: stream_manager is null"); return false; }
+
+    // --- TRACE FRONT-END WIRING ---
+    // Build a trace_config. Prefer a per-trace config file if present,
+    // otherwise fallback to reasonable defaults.
+    std::string trace_cfg_path = current_trace_dir_ + "/trace.config";
+    try {
+    #if defined(__has_include)
+    #if __has_include("../traces/trace_config.h") || __has_include("../trace/trace_config.h")
+    if (file_exists(trace_cfg_path)) {
+    tconf_.reset(new trace_config(trace_cfg_path.c_str()));
+    } else {
+    tconf_.reset(new trace_config()); // default ctor allowed on some releases
+    tconf_->set_trace_parsing_options(/*defaults*/);
+    }
+
+
+    // Create a parser bound to this directory & config
+    tparser_.reset(new trace_parser(*tconf_, current_trace_dir_));
+
+
+    // Enqueue all kernels described in kernelslist.g into the stream_manager
+    size_t enq = 0;
+    while (true) {
+    trace_kernel_info_t* kinfo = tparser_->get_next_kernel();
+    if (!kinfo) break; // no more kernels
+    // If your release uses streams from trace, read from kinfo; else 0
+    unsigned stream_id = kinfo->get_stream_id();
+    sm->launch(kinfo, stream_id);
+    ++enq;
+    }
+    if (enq == 0) logs("WARNING: no kernels enqueued from trace");
+    #endif
+    #endif
+    } catch (...) {
+    logs("ERROR: exception while binding trace");
+    return false;
+    }
+
+    return true;
+}
+
+bool ExecutionEngine::run_to_completion() {
+    logs("run_to_completion: driving simulation loop");
+
+
+    CUctx_st* cu = ctx_->the_gpgpusim->the_context;
+    stream_manager* sm = cu ? cu->get_stream_manager() : nullptr;
+    if (!gpu_ || !sm) { logs("ERROR: gpu_ or stream_manager missing"); return false; }
+
+
+    // Minimal foreground driver: keep cycling until streams empty and GPU idle.
+    // Replace with Accel-Sim's canonical loop if available in your release.
+    while (!sm->empty() || !gpu_->active()) {
+        gpu_->cycle();
+        sm->operate();
+        gpu_->deadlock_check();
+        if (sm->empty() && !gpu_->active()) break;
+    }
+
+
+    // Dump per-job stats if your build requires an explicit call (or rely on
+    // Accel-Sim automatic end-of-sim dumps).
+    gpu_->print_stats();
+
+
+    return true;
+}
+
+bool ExecutionEngine::run_to_completion() {
+    logs("run_to_completion: driving simulation loop");
+
+
+    CUctx_st* cu = ctx_->the_gpgpusim->the_context;
+    stream_manager* sm = cu ? cu->get_stream_manager() : nullptr;
+    if (!gpu_ || !sm) { logs("ERROR: gpu_ or stream_manager missing"); return false; }
+
+
+    // Foreground driver: cycle until streams empty and GPU idle
+    size_t guard = 0;
+    while (true) {
+        gpu_->cycle();
+        sm->operate();
+        gpu_->deadlock_check();
+
+
+        bool streams_empty = sm->empty();
+        bool gpu_idle = !gpu_->active();
+        if (streams_empty && gpu_idle)
+        break;
+
+
+        // Optional guard to prevent infinite loops 
+        if (++guard % 1000000 == 0) logs("... still running");
+    }
+    gpu_->print_stats();
+    return true;
+}
+
+
+void ExecutionEngine::unbind() {
+    logs("unbind: drop per-job adapters");
+    tparser_.reset();
+    tconf_.reset();
+}
+
+
+void ExecutionEngine::shutdown() {
+    logs("shutdown: free global objects (if needed)");
+    if (ctx_) {
+        if (ctx_->the_gpgpusim->the_context) {
+            delete ctx_->the_gpgpusim->the_context;
+            ctx_->the_gpgpusim->the_context = nullptr;
+        }
+    }
+}

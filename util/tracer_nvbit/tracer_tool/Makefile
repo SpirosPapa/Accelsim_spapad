@@ -28,9 +28,9 @@ NVCC_PATH=-L $(subst bin/nvcc,lib64,$(shell which nvcc | tr -s /))
 SOURCES=$(wildcard *.cu)
 
 OBJECTS=$(SOURCES:.cu=.o)
-ARCH?=all
+ARCH?=sm_XX
 
-ARCH_VER_REQ=11.7 # NVCC < 11.7 doesn't support -arch=all flag
+ARCH_VER_REQ=11.1 # NVCC < 11.7 doesn't support -arch=all flag
 ARCH_VER_CHECK=$(shell echo "${NVCC_VER} >= $(ARCH_VER_REQ)" | bc)
 ifeq ($(ARCH_VER_CHECK),0)
 ifeq ($(ARCH), all)

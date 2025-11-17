@@ -504,6 +504,9 @@ common.print_stat(
     options.configs_as_rows,
     options.do_averages,
 )
+# Deduplicate kernels (preserve order) to avoid duplicate CSV columns
+for app_and_args in all_named_kernels:
+    all_named_kernels[app_and_args] = list(dict.fromkeys(all_named_kernels[app_and_args]))
 
 for stat_name in (
     stats_yaml["collect_aggregate"]

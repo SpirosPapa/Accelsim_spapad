@@ -24,27 +24,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 BIN_DIR=./bin/$(ACCELSIM_CONFIG)
 BUILD_DIR=./build/$(ACCELSIM_CONFIG)
 
 include version_detection.mk
 
 ifeq ($(ACCELSIM_CONFIG), debug)
-	export DEBUG=1
+  export DEBUG=1
 else
-	export DEBUG=0
+  export DEBUG=0
 endif
 
 ifeq ($(DEBUG),1)
-	CXXFLAGS = -Wall -O0 -g3 -fPIC -std=c++17
+  CXXFLAGS = -Wall -O0 -g3 -fPIC -std=c++17
 else
-	CXXFLAGS = -Wall -O3 -g3 -fPIC -std=c++17
+  CXXFLAGS = -Wall -O3 -g3 -fPIC -std=c++17
 endif
 
-CXXFLAGS+=-I./trace-driven -I./trace-parser -I$(GPGPUSIM_ROOT)/libcuda -I$(GPGPUSIM_ROOT)/src -I$(CUDA_INSTALL_PATH)/include -I$(BUILD_DIR)
+# ADD daemon includes
+CXXFLAGS += -I./trace-driven -I./trace-parser -I$(GPGPUSIM_ROOT)/libcuda -I$(GPGPUSIM_ROOT)/src -I$(CUDA_INSTALL_PATH)/include -I$(BUILD_DIR) -I./daemon
 
-LIBS+=-L$(GPGPUSIM_ROOT)/lib/$(GPGPUSIM_CONFIG)/ -lcudart -lm -lz -lGL -pthread $(BUILD_DIR)/*.o 
+LIBS += -L$(GPGPUSIM_ROOT)/lib/$(GPGPUSIM_CONFIG)/ -lcudart -lm -lz -lGL -pthread $(BUILD_DIR)/*.o
 
 all: $(BIN_DIR)/accel-sim.out
 
@@ -58,20 +58,23 @@ gpgpu-sim: checkenv makedirs
 	$(MAKE) -C $(GPGPUSIM_ROOT)
 
 checkenv: makedirs
-	 @if [ ! -n "$(ACCELSIM_SETUP_ENVIRONMENT_WAS_RUN)" ]; then \
+	@if [ ! -n "$(ACCELSIM_SETUP_ENVIRONMENT_WAS_RUN)" ]; then \
 		echo "ERROR *** run 'source setup_environment.sh' before 'make'; please see README."; \
 		exit 1; \
 	fi
 
+# Link ipc_server.cc so IpcServer symbols resolve
 $(BIN_DIR)/accel-sim.out: trace-driven trace-parser gpgpu-sim makedirs version
-	$(CXX) $(CXXFLAGS) $(LIBS) -o $(BIN_DIR)/accel-sim.out accel-sim.cc main.cc 
+	$(CXX) $(CXXFLAGS) $(LIBS) -o $(BIN_DIR)/accel-sim.out \
+	    accel-sim.cc main.cc daemon/ipc_server.cc
 
 version:
 	echo "const char *g_accelsim_version=\"$(ACCELSIM_BUILD)\";" > $(BUILD_DIR)/accelsim_version.h
 
 depend: checkenv makedirs
 	touch $(BUILD_DIR)/main.makedepend
-	makedepend -f$(BUILD_DIR)/main.makedepend -p$(BUILD_DIR)/ main.cc 2> /dev/null
+	makedepend -f$(BUILD_DIR)/main.makedepend -p$(BUILD_DIR)/ \
+	    main.cc accel-sim.cc daemon/ipc_server.cc 2> /dev/null
 
 trace-driven: checkenv makedirs
 	$(MAKE) -C trace-driven depend
@@ -85,6 +88,5 @@ clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(BUILD_DIR)
 	$(MAKE) clean -C $(GPGPUSIM_ROOT)
-
 
 include $(BUILD_DIR)/main.makedepend

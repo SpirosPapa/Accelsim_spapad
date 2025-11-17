@@ -324,9 +324,24 @@ def parse_run_simulations_options():
         action="store_true",
         help="Enable passing hw_perf_bench_name for accelwattch hw and hybrid runs to config file.",
     )
+    #############################################################
+    ## MY ADDITION
+    parser.add_option(
+        "-m", "--mig",
+        dest="mig",
+        type="string",
+        default=None,
+        help=(
+            "MIG slice identifier (e.g. 1_4, 2_4, 4_7). "
+            "When set, each -C base config (e.g. QV100) will be remapped to "
+            "`configs/untested-cfgs/<base>_MIG/<slice>/gpgpusim.config`."
+        ),
+    )   
+    
+    #############################################################
 
     (options, args) = parser.parse_args()
-    # Parser seems to leave some whitespace on the options, getting rid of it
+
     if options.trace_dir != "":
         options.trace_dir = dir_option_test(
             options.trace_dir.strip(), "", this_directory
@@ -340,7 +355,6 @@ def parse_run_simulations_options():
     if options.job_mem != None:
         options.job_mem = options.job_mem.strip()
     return (options, args)
-
 
 # After collection, spew out the tables
 def print_stat(

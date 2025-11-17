@@ -37,6 +37,38 @@ def get_csv_data(filepath):
                 current_stat = row[0]
                 state = "find-apps"
                 continue
+            # if state == "find-apps":
+            #     seen = set()
+            #     apps = []
+            #     keep_index = []
+            #     for idx, item in enumerate(row[1:]):
+            #         name = item.upper()
+            #         if name not in seen:
+            #             apps.append(name)
+            #             seen.add(name)
+            #             keep_index.append(idx)   # remember which positions to keep
+            #     state = "process-cfgs"
+            #     continue
+
+            # if state == "process-cfgs":
+            #     if len(row) == 0:
+            #         if any_data:
+            #             all_stats[current_stat] = apps, data
+            #         apps = []
+            #         data = {}
+            #         state = "start"
+            #         any_data = False
+            #         continue
+            #     temp = []
+            #     for idx in keep_index:           # only keep non-duplicate columns
+            #         try:
+            #             temp.append(float(row[1:][idx]))
+            #             any_data = True
+            #         except ValueError:
+            #             temp.append(0)
+            #     data[row[0]] = np.array(temp)
+
+###original
             if state == "find-apps":
                 apps = [item.upper() for item in row[1:]]
                 state = "process-cfgs"
