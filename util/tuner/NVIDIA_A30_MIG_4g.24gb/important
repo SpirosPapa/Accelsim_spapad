@@ -1,0 +1,101 @@
+# float lat = (milliseconds * 1000 * CLK_FREQUENCY) / 3;
+# miliseconds comes from the latency of launching a 1 TB kernel
+-gpgpu_kernel_launch_latency  13148
+
+
+# get_num_channels(deviceProp.memoryBusWidth, DRAM_MODEL)
+#   unsigned channel_width =
+#      dram_model_bus_width[model] * dram_model_mem_per_ctrlr[model];
+# static const char *dram_model_str[] = {"none", "GDDR5", "GDDR5X", "GDDR6","HBM"};
+# static const unsigned dram_model_bus_width[] = {0, 32, 32, 16, 128}; // in bits
+# static const unsigned dram_model_mem_per_ctrlr[] = {0, 1, 1, 1, 1};
+-gpgpu_n_mem 24
+
+
+# unsigned l2_banks_num = mem_channel * L2_BANKS_PER_MEM_CHANNEL;
+#    if (isPowerOfTwo(l2_banks_num) &&
+#        l2_banks_num <= ACCELSIM_IPOLY_HASH_SUPPORT)
+#      std::cout << "-gpgpu_memory_partition_indexing 2" << std::endl;
+#    else
+#      std::cout << "-gpgpu_memory_partition_indexing 0" << std::endl;
+# and L2_BANKS_PER_MEM_CHANNEL
+-gpgpu_n_sub_partition_per_mchannel 2
+
+
+# register banks
+# deviceProp.major >= 6
+# Runs a Tensor Core microbenchmark to measure how many FMA(fused multiply add) operations per cycle per SM can be issued.
+# float fma_bw = tensor_max_flops<half, float>(true);
+# unsigned tensor_MACs_per_SM = round_up_2n(fma_bw);
+# regfile_bw = tensor_MACs_per_SM * sizeof(half) * 2;
+# banks_num = regfile_bw / (WARP_SIZE * 4) / reg_ports
+# banks_num = banks_num * 2 if deviceProp.major>3
+-gpgpu_num_reg_banks 32
+
+
+
+## L1/shared memory configuration
+# <nsets>:<bsize>:<assoc>,<rep>:<wr>:<alloc>:<wr_alloc>:<set_index_fn>,<mshr>:<N>:<merge>,<mq>:**<fifo_entry>
+# is_sector = (deviceProp.major >= 6) ? 'S' : 'N'
+# sets hardcoded to 4 after l1_assoc bench
+# L1_CACHE_LINE_SIZE 128 from l1_assocc ubench
+# assoc = config_l1_size / L1_CACHE_LINE_SIZE / L1_CACHE_SETS
+# L:T:m:L:L hardcoded after Volta
+# A hardcoded, mshr=warps_num_per_sm *2*L1_CACHE_LINE_SIZE / L1_SECTOR_SIZE , 
+# 16,0,32 hardcoded
+-gpgpu_cache:dl1 S:4:128:64,L:T:m:L:L,A:512:64,16:0,32
+same for L2
+
+
+
+
+
+# 1 means data are copied straight to L2 when memcpy is used ,else data are cached on first kernel access 
+# measure l2 latency with and without warmup using a pointer chasing array
+# if error<10% then l2 is populated on memcpy
+-gpgpu_perf_sim_memcpy 1
+
+
+# memory partition latency config
+# lat_2-lat_1
+# -rop_latency <# minimum cycle before L2 cache access> 	
+# Specify the minimum latency (in core clock cycles) between when a memory request arrived at the memory partition 
+# and when it accesses the L2 cache / moves into the queue to access DRAM. It models the minimum L2 hit latency. 
+-gpgpu_l2_rop_latency 171
+
+# lat_mem - lat2 
+# for lat_mem pointer chase and use cache volatile modifier to ignore the L2 cache
+-dram_latency 185
+
+
+
+nbk -> number of banks per memory partition
+nbkgrp -> number of bank groups
+CCD -> column-to-column delay (same bank group)
+CCDL -> column-to-column delay (different bank group)
+RRD -> row-to-row activation delay (between two ACT commands)
+RCD -> row-to-column delay (ACT to READ/WRITE)
+RAS -> row active time (minimum time a row must remain open)
+RP -> row precharge time (time to close a row before opening another)
+RC -> row cycle time (total time between two ACTs to same bank, RC = RAS + RP)
+CL -> CAS latency (delay from READ command to data availability)
+WL -> write latency (delay from WRITE command to data acceptance)
+CDLR -> bus turnaround delay (WRITE to READ)
+WR -> write recovery time (time from end of WRITE to PRECHARGE)
+RTPL -> read-to-precharge latency (delay from READ completion to PRECHARGE)
+
+
+# all hardcoded except flit size
+# L2_BANK_WIDTH_in_BYTE + ACCELSIM_ICNT_CONTROL = 32 + 8 
+# 32 in hw_def
+-network_mode 2 #local crossbar
+# Input queue depth at each router input (one per virtual channel per port)
+-icnt_in_buffer_limit 512
+-icnt_out_buffer_limit 512
+# Number of independent subnetworks
+-icnt_subnets 2
+# Size (in bytes) of one flit (flow control unit).
+-icnt_flit_size 40
+# Arbitration algorithm for router scheduling
+# 0 round robin , 1 FIFO-based
+-icnt_arbiter_algo 1

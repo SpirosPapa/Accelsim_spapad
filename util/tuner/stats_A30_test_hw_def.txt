@@ -1,0 +1,820 @@
+running ./ACT_CORE1 microbenchmark
+/////////////////////////////////
+running ./ACT_CORE2 microbenchmark
+/////////////////////////////////
+running ./BE_DP_FP_ADD microbenchmark
+/////////////////////////////////
+running ./BE_DP_FP_DIV microbenchmark
+/////////////////////////////////
+running ./BE_DP_FP_MAD microbenchmark
+/////////////////////////////////
+running ./BE_DP_FP_MUL microbenchmark
+/////////////////////////////////
+running ./BE_L1D_HIT microbenchmark
+/////////////////////////////////
+running ./BE_L2D_HIT microbenchmark
+/////////////////////////////////
+running ./BE_MEM_CNST_Acss microbenchmark
+/////////////////////////////////
+running ./BE_MEM_DRAM_Acss microbenchmark
+/////////////////////////////////
+running ./BE_MEM_SHRD_Acss microbenchmark
+/////////////////////////////////
+running ./BE_SFU_EXP microbenchmark
+/////////////////////////////////
+running ./BE_SFU_LG2 microbenchmark
+/////////////////////////////////
+running ./BE_SFU_SIN microbenchmark
+/////////////////////////////////
+running ./BE_SFU_SQRT microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l1 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l12 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l16 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l20 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l28 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l4 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_l8 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_leven microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_ADD_lodd microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l1 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l12 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l16 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l20 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l28 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l4 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_l8 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_leven microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_DIV_lodd microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MAD microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l1 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l12 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l16 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l20 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l28 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l4 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_l8 microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_leven microbenchmark
+/////////////////////////////////
+running ./BE_SP_FP_MUL_lodd microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l1 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l12 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l16 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l20 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l28 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l4 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_l8 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_leven microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_ADD_lodd microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_DIV microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_LOGIC microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l1 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l12 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l16 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l20 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l24 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l28 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l32 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l4 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_l8 microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_leven microbenchmark
+/////////////////////////////////
+running ./BE_SP_INT_MUL_lodd microbenchmark
+/////////////////////////////////
+running ./BE_TEXTURE_ACCESS microbenchmark
+/////////////////////////////////
+running ./BE_TEXTURE_ACCESS_2 microbenchmark
+/////////////////////////////////
+running ./BRANCHING1 microbenchmark
+/////////////////////////////////
+running ./BRANCHING2 microbenchmark
+/////////////////////////////////
+running ./BRANCHING3 microbenchmark
+/////////////////////////////////
+running ./BRANCHING4 microbenchmark
+/////////////////////////////////
+running ./BRANCHING5 microbenchmark
+/////////////////////////////////
+running ./INT_FP_DP_STATIC microbenchmark
+/////////////////////////////////
+running ./INT_FP_SFU_STATIC microbenchmark
+/////////////////////////////////
+running ./INT_FP_STATIC microbenchmark
+/////////////////////////////////
+running ./INT_FP_TENSOR_STATIC microbenchmark
+/////////////////////////////////
+running ./INT_FP_TEX_STATIC microbenchmark
+/////////////////////////////////
+running ./INT_STATIC microbenchmark
+/////////////////////////////////
+running ./L1asso.csv microbenchmark
+/////////////////////////////////
+running ./L1line.csv microbenchmark
+/////////////////////////////////
+running ./LIGHT_SM microbenchmark
+/////////////////////////////////
+running ./MSHR100_array1073741824_shmem12288_itr6.csv microbenchmark
+/////////////////////////////////
+running ./MaxFlops microbenchmark
+FLOP per SM = 127.209984 (flop/clk/SM)
+Total Clk number = 65943 
+/////////////////////////////////
+running ./MaxFlops_double microbenchmark
+DPU FLOP per SM = 63.947063 (flop/clk/SM)
+Total Clk number = 524722 
+/////////////////////////////////
+running ./MaxFlops_float microbenchmark
+FLOP per SM = 127.221558 (flop/clk/SM)
+Total Clk number = 65937 
+/////////////////////////////////
+running ./MaxFlops_half microbenchmark
+half FLOP per SM = 404.699341 (flop/clk/SM)
+Total Clk number = 10364 
+/////////////////////////////////
+running ./MaxFlops_int32 microbenchmark
+int32 FLOP per SM = 127.190697 (flop/clk/SM)
+Total Clk number = 65953 
+/////////////////////////////////
+running ./REG_FILE microbenchmark
+/////////////////////////////////
+running ./SHRD_TEX_SFU microbenchmark
+/////////////////////////////////
+running ./TENSOR microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_1C0zh5 microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_3ik0bt microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_6zpbl5 microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_7kjuje microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_AjfzM9 microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_E5sYFs microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_Iy7gHi microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_LgDuaW microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_NTaKTE microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_NefPWN microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_Qda8q5 microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_SpBaKK microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_aJoSc9 microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_cmyL8R microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_dbwUpC microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_gXahos microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_jgOB7h microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_lPJEsZ microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_mjEHcq microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_rd6Y1B microbenchmark
+/////////////////////////////////
+running ./_app_cuda_version_vzJ4jr microbenchmark
+/////////////////////////////////
+running ./add_mem_1 microbenchmark
+/////////////////////////////////
+running ./add_mem_2 microbenchmark
+/////////////////////////////////
+running ./atomic_add_bw microbenchmark
+Atomic int32 bandwidth = 0.000009 (byte/clk)
+Total Clk number = 810452426938041 
+/////////////////////////////////
+running ./atomic_add_bw_conflict microbenchmark
+Atomic int32 bandwidth = 0.168464 (byte/clk)
+Total Clk number = 2788497231 
+/////////////////////////////////
+running ./atomic_add_bw_diverge microbenchmark
+Usage : atomics_add_bw_profile [# Conflict Atomics]     
+        [# Diverged Atomics]  must be between 1 and 16  
+/////////////////////////////////
+running ./atomic_add_bw_profile microbenchmark
+Usage : atomics_add_bw_profile [# Conflict Atomics]     
+        [# Diverged Atomics]  must be between 1 and 16  
+/////////////////////////////////
+running ./atomic_add_lat microbenchmark
+Atomic int32 latency = 296.315430 (clk)
+Total Clk number = 303427 
+/////////////////////////////////
+running ./backprop microbenchmark
+/////////////////////////////////
+running ./backprop-rodinia-2.0-ft microbenchmark
+/////////////////////////////////
+running ./backprop_k1 microbenchmark
+/////////////////////////////////
+running ./backprop_k2 microbenchmark
+/////////////////////////////////
+running ./bfs-rodinia-2.0-ft microbenchmark
+No input file specified, defaulting to SampleGraph.txt
+Reading File
+Error Reading graph file
+/////////////////////////////////
+running ./btree_k1 microbenchmark
+WG size of kernel 1 & 2  = 256 
+Selecting device 0
+Usage: ./b+tree file input_file command command_list
+Input File: (null) 
+Command File: (null) 
+/////////////////////////////////
+running ./btree_k2 microbenchmark
+WG size of kernel 1 & 2  = 256 
+Selecting device 0
+Usage: ./b+tree file input_file command command_list
+Input File: (null) 
+Command File: (null) 
+/////////////////////////////////
+running ./config_dpu microbenchmark
+DPU FLOP per SM = 63.947186 (flop/clk/SM)
+Total Clk number = 524721 
+double-precision DPU latency = 6.043152 (clk)
+Total Clk number = 99011 
+
+//Accel_Sim config: 
+-gpgpu_num_dp_units 4
+-ptx_opcode_latency_dp 6,6,6,6,330
+-ptx_opcode_initiation_dp 4,4,4,4,130
+-trace_opcode_latency_initiation_dp 6,4
+/////////////////////////////////
+running ./config_fpu microbenchmark
+FLOP per SM = 127.242790 (flop/clk/SM)
+Total Clk number = 65926 
+float-precision FPU latency = 4.050720 (clk)
+Total Clk number = 66367 
+
+//Accel_Sim config: 
+-gpgpu_num_sp_units 4
+-ptx_opcode_latency_fp 4,4,4,4,39
+-ptx_opcode_initiation_fp 2,2,2,2,4
+-trace_opcode_latency_initiation_sp 4,2
+/////////////////////////////////
+running ./config_int microbenchmark
+int32 FLOP per SM = 127.213844 (flop/clk/SM)
+Total Clk number = 65941 
+int32 latency = 4.122070 (clk)
+Total Clk number = 16884 
+
+//Accel_Sim config: 
+-gpgpu_num_int_units 4
+-ptx_opcode_latency_int 4,4,4,4,21
+-ptx_opcode_initiation_int 2,2,2,2,2
+-trace_opcode_latency_initiation_int 4,2
+/////////////////////////////////
+running ./config_sfu microbenchmark
+SFU fast sqrt bw = 15.9678(flops/clk/SM) 
+Total Clk number = 262672
+SFU fast sqrt latency = 21.1248(clk) 
+Total Clk number = 86527
+
+//Accel_Sim config: 
+-gpgpu_num_sfu_units 4
+-ptx_opcode_latency_sfu 21
+-ptx_opcode_initiation_sfu 8
+-trace_opcode_latency_initiation_sfu 21,8
+/////////////////////////////////
+running ./config_tensor microbenchmark
+wmma PTX issue bandwidth = 7.96225(thread/clk/SM) 
+hmma SASS issue bandwidth = 15.9245(thread/clk/SM)
+FMA tensor bandwidth = 1019.17(FMA/clk/SM)
+Total Clk number = 263387
+wmma latency = 25.1794(clk)
+hmma latency = 12.5897(clk)
+Total Clk number = 103135
+
+//Accel_Sim config: 
+-gpgpu_tensor_core_avail 1
+-gpgpu_num_tensor_core_units 4
+-ptx_opcode_latency_tesnor 25
+-ptx_opcode_initiation_tensor 16
+-trace_opcode_latency_initiation_tensor 12,8
+-specialized_unit_3 1,4,12,4,4,TENSOR
+-trace_opcode_latency_initiation_spec_op_3 12,8
+/////////////////////////////////
+running ./config_udp microbenchmark
+-specialized_unit_4 1,4,4,4,4,UDP
+-trace_opcode_latency_initiation_spec_op_4 4,1
+/////////////////////////////////
+running ./const_mul microbenchmark
+/////////////////////////////////
+running ./core_config microbenchmark
+CUDA version number = 8.0
+
+//Accel_Sim config: 
+-gpgpu_ptx_force_max_capability 80
+-gpgpu_shader_registers 65536
+-gpgpu_registers_per_block 65536
+-gpgpu_occupancy_sm_number 80
+-gpgpu_coalesce_arch 80
+-gpgpu_pipeline_widths 4,4,4,4,4,4,4,4,4,4,8,4,4
+-gpgpu_sub_core_model 1
+-gpgpu_enable_specialized_operand_collector 0
+-gpgpu_operand_collector_num_units_gen 8
+-gpgpu_operand_collector_num_in_ports_gen 8
+-gpgpu_operand_collector_num_out_ports_gen 8
+-gpgpu_num_sched_per_core 4
+-gpgpu_max_insn_issue_per_warp 1
+-gpgpu_dual_issue_diff_exec_units 1
+-gpgpu_inst_fetch_throughput 4
+-gpgpu_shader_core_pipeline 2048:32
+-gpgpu_shader_cta 32
+/////////////////////////////////
+running ./data.csv microbenchmark
+/////////////////////////////////
+running ./deviceQuery microbenchmark
+  Device : "NVIDIA A30"
+
+  CUDA version number                         : 8.0
+  GPU Max Clock rate                             : 1440 MHz 
+  Multiprocessors Count                       : 56
+  Maximum number of threads per multiprocessor: 2048
+  CUDA Cores per multiprocessor               : 64 
+  Registers per multiprocessor                : 65536
+  Shared memory per multiprocessor            : 167936 bytes
+  Warp size                                   : 32
+  Maximum number of threads per block         : 1024
+  Shared memory per block                     : 49152 bytes
+  Registers per block                         : 65536
+  globalL1CacheSupported                      : 1
+  localL1CacheSupported                       : 1
+  L2 Cache Size                             : 24 MB
+  Global memory size                        : 23 GB
+  Memory Clock rate                           : 1215 Mhz
+  Memory Bus Width                            : 3072 bit
+ ////////////////////////// 
+/////////////////////////////////
+running ./heartwall-rodinia-2.0-ft microbenchmark
+ERROR: usage: heartwall <inputfile> <num of frames> <goldfile>
+/////////////////////////////////
+running ./hotspot microbenchmark
+WG size of kernel = 16 X 16
+/////////////////////////////////
+running ./hotspot-rodinia-2.0-ft microbenchmark
+/////////////////////////////////
+running ./hotspot_k1 microbenchmark
+WG size of kernel = 16 X 16
+/////////////////////////////////
+running ./immediates_constant microbenchmark
+/////////////////////////////////
+running ./immediates_texture microbenchmark
+/////////////////////////////////
+running ./kernel_lat microbenchmark
+Kernel Launch Latency = 3609.6 cycles
+The reported latency above can be slightly higher than real. For accurate evaultion using nvprof event, exmaple: make events ./kernel_lat
+
+//Accel_Sim config: 
+-gpgpu_kernel_launch_latency  3609
+/////////////////////////////////
+running ./l1_access_grain microbenchmark
+
+This benchmark measures coalescing granularity for differnet strides.
+check the nvprof or nvsight for received l1 reads and writes.
+to run the program with nsight: make nvsight ./l1_access_grain
+stats to look at: l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum & l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum
+
+/////////////////////////////////
+running ./l1_adaptive microbenchmark
+The ubench is not imepleneted yet.
+/////////////////////////////////
+running ./l1_associativity microbenchmark
+Launching L1 cache line size ubench
+Saving L1 cache line size data at L1line.csv
+Launching L1 cache assoc ubench
+Saving L1 cache assoc data at L1asso.csv
+/////////////////////////////////
+running ./l1_banks microbenchmark
+The ubench is not imepleneted yet.
+/////////////////////////////////
+running ./l1_bw_128 microbenchmark
+L1 bandwidth = 108.467(byte/clk/SM), 145.465(GB/s/SM)
+Total Clk number = 38669
+/////////////////////////////////
+running ./l1_bw_32f microbenchmark
+L1 bandwidth = 98.2756(byte/clk/SM), 131.798(GB/s/SM)
+Total Clk number = 42679
+/////////////////////////////////
+running ./l1_bw_32f_unroll microbenchmark
+L1 bandwidth = 38.777981 (byte/clk/SM)
+Total Clk number = 108162 
+/////////////////////////////////
+running ./l1_bw_32f_unroll_large microbenchmark
+L1 bandwidth = 109.248004 (byte/clk/SM)
+Total Clk number = 153570 
+/////////////////////////////////
+running ./l1_bw_64f microbenchmark
+L1 bandwidth = 121.786(byte/clk/SM), 163.328(GB/s/SM)
+Total Clk number = 34440
+/////////////////////////////////
+running ./l1_bw_64v microbenchmark
+L1 bandwidth = 69.8306(byte/clk/SM), 93.6501(GB/s/SM)
+Total Clk number = 30032
+/////////////////////////////////
+running ./l1_config microbenchmark
+
+//Accel_Sim config: 
+-gpgpu_adaptive_cache_config 1
+-gpgpu_shmem_option 0,8,16,32,64,164
+-gpgpu_unified_l1d_size 192
+-gpgpu_l1_banks 4
+-gpgpu_cache:dl1 S:4:128:64,L:T:m:L:L,A:512:64,16:0,32
+-gpgpu_gmem_skip_L1D 0
+-gpgpu_l1_cache_write_ratio 25
+/////////////////////////////////
+running ./l1_lat microbenchmark
+L1 Latency  =      33.0000 cycles
+Total Clk number = 1081344 
+
+//Accel_Sim config: 
+-gpgpu_l1_latency 33
+/////////////////////////////////
+running ./l1_mshr microbenchmark
+Launching L1 MSHR ubench
+Saving L1 MSHR data at MSHR100_array1073741824_shmem12288_itr6.csv
+/////////////////////////////////
+running ./l1_sector microbenchmark
+Launching L1 sector ubench
+Saving L1 sector data at data.csv
+/////////////////////////////////
+running ./l1_shared_bw microbenchmark
+Shared Memory Bandwidth = 107.955588 (byte/clk/SM)
+Total Clk number = 310817 
+/////////////////////////////////
+running ./l1_write_policy microbenchmark
+
+This microbenchmark detects L1 write policy.
+check the nvprof or nvsight for received l1 reads and writes to detect the policy.
+see the code comments for further details
+to run the program with nvsight: make nvsight ./l1_write_policy
+stats to look at: l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum & l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum & l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit.sum & l1tex__t_sectors_pipe_lsu_mem_global_op_st_lookup_hit.sum 
+
+/////////////////////////////////
+running ./l2_access_grain microbenchmark
+
+This benchmark measures l2 access granularity for differnet strides.
+check the nvprof or nvsight for received l2 reads and write.
+to run the program with nsight: make nvsight ./l2_access_grain
+stats to look at: lts__t_sectors_srcunit_tex_op_read.sum and lts__t_sectors_srcunit_tex_op_write.sum 
+
+/////////////////////////////////
+running ./l2_bw_128 microbenchmark
+L2 bandwidth = 1095.88(byte/clk), 1469.69(GB/s)
+Max Theortical L2 bandwidth = 1536(byte/clk), 2059.94(GB/s)
+L2 BW achievable = 71.3462%
+Total Clk number = 428663
+/////////////////////////////////
+running ./l2_bw_32f microbenchmark
+L2 bandwidth = 1763.17(byte/clk), 2364.59(GB/s)
+Max Theortical L2 bandwidth = 1536(byte/clk), 2059.94(GB/s)
+L2 BW achievable = 114.79%
+Total Clk number = 532861
+/////////////////////////////////
+running ./l2_bw_64f microbenchmark
+L2 bandwidth = 1364.8(byte/clk), 1830.33(GB/s)
+Max Theortical L2 bandwidth = 1536(byte/clk), 2059.94(GB/s)
+L2 BW achievable = 88.8539%
+Total Clk number = 1376798
+/////////////////////////////////
+running ./l2_config microbenchmark
+L2 Cache Size = 24 MB
+L2 Banks number = 48
+
+//Accel_Sim config: 
+-gpgpu_n_sub_partition_per_mchannel 2
+-icnt_flit_size 40
+-gpgpu_memory_partition_indexing 0
+-gpgpu_cache:dl2 S:256:128:16,L:B:m:L:X,A:192:4,32:0,32
+/////////////////////////////////
+running ./l2_copy_engine microbenchmark
+L2 Latency no-warmp up =     542.0258 cycles 
+Total Clk number = 17761099 
+L2 Hit Latency =     542.7650 cycles 
+Total Clk number = 17785323 
+Is memcpy cached in L2? Yes, error=0.0
+
+//Accel_Sim config: 
+-gpgpu_perf_sim_memcpy 1
+/////////////////////////////////
+running ./l2_lat microbenchmark
+L2 Hit Latency =     542.3954 cycles 
+Total Clk number = 17773211 
+L1 Latency  =      33.0000 cycles
+Total Clk number = 1081344 
+
+//Accel_Sim config: 
+-gpgpu_l2_rop_latency 509
+/////////////////////////////////
+running ./l2_write_policy microbenchmark
+
+This microbenchmark detects L2 write policy.
+check the nvprof or nvsight for received L2 reads and writes to detect the policy.
+see the code comments for further details
+to run the program with nvsight: make nvsight ./2
+stats to look at: llts__t_sectors_srcunit_tex_op_read.sum & lts__t_sectors_srcunit_tex_op_write.sum & lts__t_sectors_srcunit_tex_op_read_lookup_hit.sum & lts__t_sectors_srcunit_tex_op_write_lookup_hit.sum 
+
+/////////////////////////////////
+running ./lat_double microbenchmark
+double-precision DPU latency = 6.050049 (clk)
+Total Clk number = 99124 
+/////////////////////////////////
+running ./lat_float microbenchmark
+float-precision FPU latency = 4.059387 (clk)
+Total Clk number = 66509 
+/////////////////////////////////
+running ./lat_half microbenchmark
+fpu16 latency = 8.181396 (clk)
+Total Clk number = 33511 
+/////////////////////////////////
+running ./lat_int32 microbenchmark
+int32 latency = 4.190918 (clk)
+Total Clk number = 17166 
+/////////////////////////////////
+running ./list_devices microbenchmark
+
+Device 0: "NVIDIA A30 sm_8.0"
+/////////////////////////////////
+running ./lud-rodinia-2.0-ft microbenchmark
+/////////////////////////////////
+running ./mem_atom_size microbenchmark
+
+This benchmark measures mem atom size granularity
+check the nvprof or nvsight for received mem reads and writes
+to run the program with nsight: make nvsight ./l2_access_grain
+stats to look at: dram__sectors_read.sum & dram__sectors_write.sum & dram__bytes_read.sum & dram__sectors_read.sum
+
+we launched 12582912 read memory reqs (1 req per thread) with a stride of 32 (128 bytes)
+if the number of memory reads is the same as read reqs, then mem atom size is 32B
+if the number of memory reads is 2X issued read reqs, then mem atom size is 64B, etc.
+
+/////////////////////////////////
+running ./mem_bw microbenchmark
+Mem BW= 1104.802002 (Byte/Clk)
+Mem BW= 531.103840 (GB/sec)
+Max Theortical Mem BW= 933.119995 (GB/sec)
+Mem Efficiency = 118.398705 %
+Total Clk number = 273343 
+/////////////////////////////////
+running ./mem_config microbenchmark
+Global memory size = 23 GB
+Memory Clock rate = 1215 Mhz
+Memory Bus Width = 3072 bit
+Memory type = HBM
+Memory channels = 24
+
+//Accel_Sim config: 
+-gpgpu_n_mem 24
+-gpgpu_n_mem_per_ctrlr 1
+-gpgpu_dram_buswidth 16
+-gpgpu_dram_burst_length 2
+-dram_data_command_freq_ratio 2
+-dram_dual_bus_interface 1
+-gpgpu_dram_timing_opt nbk=16:CCD=1:RRD=5:RCD=18:RAS=41:RP=18:RC=58:CL=18:WL=3:CDLR=4:WR=15:nbkgrp=4:CCDL=3:RTPL=5
+/////////////////////////////////
+running ./mem_lat microbenchmark
+Mem latency =     696.1628 cycles 
+Total Clk number = 5702966 
+L2 Hit Latency =     542.0682 cycles 
+Total Clk number = 17762492 
+
+//Accel_Sim config: 
+-dram_latency 154
+/////////////////////////////////
+running ./mix1 microbenchmark
+/////////////////////////////////
+running ./mix10 microbenchmark
+/////////////////////////////////
+running ./mix11 microbenchmark
+/////////////////////////////////
+running ./mix12 microbenchmark
+/////////////////////////////////
+running ./mix13 microbenchmark
+/////////////////////////////////
+running ./mix14 microbenchmark
+/////////////////////////////////
+running ./mix15 microbenchmark
+/////////////////////////////////
+running ./mix16 microbenchmark
+/////////////////////////////////
+running ./mix17 microbenchmark
+/////////////////////////////////
+running ./mix18 microbenchmark
+/////////////////////////////////
+running ./mix19 microbenchmark
+/////////////////////////////////
+running ./mix2 microbenchmark
+/////////////////////////////////
+running ./mix20 microbenchmark
+/////////////////////////////////
+running ./mix3 microbenchmark
+/////////////////////////////////
+running ./mix4 microbenchmark
+/////////////////////////////////
+running ./mix5 microbenchmark
+/////////////////////////////////
+running ./mix6 microbenchmark
+/////////////////////////////////
+running ./mix7 microbenchmark
+/////////////////////////////////
+running ./mix8 microbenchmark
+/////////////////////////////////
+running ./mix9 microbenchmark
+/////////////////////////////////
+running ./mul_add_tex_1 microbenchmark
+/////////////////////////////////
+running ./mul_add_tex_2 microbenchmark
+/////////////////////////////////
+running ./mul_mem_1 microbenchmark
+/////////////////////////////////
+running ./mul_mem_2 microbenchmark
+/////////////////////////////////
+running ./nn-rodinia-2.0-ft microbenchmark
+/////////////////////////////////
+running ./nw-rodinia-2.0-ft microbenchmark
+/////////////////////////////////
+running ./pathfinder-rodinia-2.0-ft microbenchmark
+Usage: dynproc row_len col_len pyramid_height
+/////////////////////////////////
+running ./pathfinder_k1 microbenchmark
+Usage: dynproc row_len col_len pyramid_height
+/////////////////////////////////
+running ./regfile_bw microbenchmark
+wmma PTX issue bandwidth = 7.9624(thread/clk/SM) 
+hmma SASS issue bandwidth = 15.9248(thread/clk/SM)
+FMA tensor bandwidth = 1019.19(FMA/clk/SM)
+Total Clk number = 263382
+
+regfile_bw = 4096 (byte/SM)
+
+//Accel_Sim config: 
+-gpgpu_num_reg_banks 32
+-gpgpu_reg_file_port_throughput 2
+/////////////////////////////////
+running ./sfu_bw_fsqrt microbenchmark
+SFU fast sqrt bw = 15.9678(flops/clk/SM) 
+Total Clk number = 262672
+/////////////////////////////////
+running ./sfu_lat_fsqrt microbenchmark
+SFU fast sqrt latency = 21.1509(clk) 
+Total Clk number = 86634
+/////////////////////////////////
+running ./shared_bank_conflicts microbenchmark
+
+matrix size: 512x512 (16x16 tiles), kernel name: 'transposeCoalesced', tile size: 32x32, block size: 32x8
+Done
+/////////////////////////////////
+running ./shared_bw microbenchmark
+Shared Memory Bandwidth = 127.843(byte/clk/SM), 171.451(GB/s/SM)
+Total Clk number = 131233
+/////////////////////////////////
+running ./shared_bw_64 microbenchmark
+Shared Memory Bandwidth = 127.961(byte/clk/SM), 171.61(GB/s/SM)
+Total Clk number = 262223
+/////////////////////////////////
+running ./shared_lat microbenchmark
+Shared Memory Latency  = 29.001953 cycles
+Total Clk number = 59396 
+
+//Accel_Sim config: 
+-gpgpu_smem_latency 29
+/////////////////////////////////
+running ./shd_config microbenchmark
+Shared memory per multiprocessor = 167936 bytes
+Shared memory per block = 49152 bytes
+
+//Accel_Sim config: 
+-gpgpu_shmem_size 167936
+-gpgpu_shmem_sizeDefault 167936
+-gpgpu_shmem_per_block 49152
+/////////////////////////////////
+running ./srad_v1_k1 microbenchmark
+ERROR: wrong number of arguments
+/////////////////////////////////
+running ./srad_v2-rodinia-2.0-ft microbenchmark
+Wrong Usage: infile r1 r2 c1 c2 lambda niter
+/////////////////////////////////
+running ./streamcluster-rodinia-2.0-ft microbenchmark
+PARSEC Benchmark Suite
+/////////////////////////////////
+running ./system_config microbenchmark
+Device Name = NVIDIA A30
+GPU Max Clock rate = 1440 MHz 
+GPU Base Clock rate = 1440 MHz 
+SM Count = 56
+CUDA version number = 8.0
+
+//Accel_Sim config: 
+-gpgpu_compute_capability_major 8
+-gpgpu_compute_capability_minor 0
+-gpgpu_n_clusters 56
+-gpgpu_n_cores_per_cluster 1
+-gpgpu_clock_domains 1440:1440:1440:1215
+/////////////////////////////////
+running ./tensor_bw_half microbenchmark
+FP16 operand, FP32 accumalte:
+wmma PTX issue bandwidth = 7.96225(thread/clk/SM) 
+hmma SASS issue bandwidth = 15.9245(thread/clk/SM)
+FMA tensor bandwidth = 1019.17(FMA/clk/SM)
+Total Clk number = 263387
+
+FP16 operand, FP16 accumalte:
+wmma PTX issue bandwidth = 7.98109(thread/clk/SM) 
+hmma SASS issue bandwidth = 15.9622(thread/clk/SM)
+FMA tensor bandwidth = 1021.58(FMA/clk/SM)
+Total Clk number = 262765
+/////////////////////////////////
+running ./tensor_lat_half microbenchmark
+FP16 operand, FP32 accumalte:
+wmma latency = 25.1677(clk)
+hmma latency = 12.5839(clk)
+Total Clk number = 103087
+
+FP16 operand, FP16 accumalte:
+wmma latency = 25.1782(clk)
+hmma latency = 12.5891(clk)
+Total Clk number = 103130
+/////////////////////////////////

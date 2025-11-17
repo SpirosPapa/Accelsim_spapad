@@ -1,0 +1,77 @@
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_lat/l2_lat.cu:14:-gpgpu_l2_rop_latency
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_lat/l2_lat matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_config/l2_config.cu:72:-gpgpu_n_sub_partition_per_mchannel
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_config/l2_config.cu:79:-gpgpu_memory_partition_indexing
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_config/l2_config.cu:81:-gpgpu_memory_partition_indexing
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_config/l2_config.cu:82:-gpgpu_cache
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_config/l2_config matches
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_copy_engine/l2_copy_engine matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l2_cache/l2_copy_engine/l2_copy_engine.cu:132:-gpgpu_perf_sim_memcpy
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/kernel_lat/kernel_lat.cu:137:-gpgpu_kernel_launch_latency
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/kernel_lat/kernel_lat matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config.cu:21:-gpgpu_compute_capability_major
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config.cu:23:-gpgpu_compute_capability_minor
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config.cu:25:-gpgpu_n_clusters
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config.cu:27:-gpgpu_n_cores_per_cluster
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config.cu:28:-gpgpu_clock_domains
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/system/system_config/system_config matches
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_fpu/config_fpu matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_fpu/config_fpu.cu:24:-gpgpu_num_sp_units
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_int/config_int matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_int/config_int.cu:25:-gpgpu_num_int_units
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_int/config_int.cu:27:-gpgpu_num_int_units
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_tensor/config_tensor matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_tensor/config_tensor.cu:20:-gpgpu_tensor_core_avail
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_tensor/config_tensor.cu:21:-gpgpu_num_tensor_core_units
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_tensor/config_tensor.cu:23:-gpgpu_tensor_core_avail
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_tensor/config_tensor.cu:24:-gpgpu_num_tensor_core_units
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_sfu/config_sfu.cu:20:-gpgpu_num_sfu_units
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_sfu/config_sfu matches
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_dpu/config_dpu matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/config_dpu/config_dpu.cu:25:-gpgpu_num_dp_units
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:14:-gpgpu_ptx_force_max_capability
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:17:-gpgpu_shader_registers
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:19:-gpgpu_registers_per_block
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:21:-gpgpu_occupancy_sm_number
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:23:-gpgpu_coalesce_arch
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:44:-gpgpu_pipeline_widths
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:54:-gpgpu_sub_core_model
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:56:-gpgpu_enable_specialized_operand_collector
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:57:-gpgpu_operand_collector_num_units_gen
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:59:-gpgpu_operand_collector_num_in_ports_gen
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:61:-gpgpu_operand_collector_num_out_ports_gen
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:64:-gpgpu_num_sched_per_core
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:67:-gpgpu_max_insn_issue_per_warp
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:68:-gpgpu_dual_issue_diff_exec_units
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:71:-gpgpu_inst_fetch_throughput
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:74:-gpgpu_shader_core_pipeline
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config.cu:77:-gpgpu_shader_cta
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/core_config/core_config matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/regfile_bw/regfile_bw.cu:54:-gpgpu_num_reg_banks
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/regfile_bw/regfile_bw.cu:55:-gpgpu_reg_file_port_throughput
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/core/regfile_bw/regfile_bw matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:24:-gpgpu_n_mem
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:28:-gpgpu_n_mem_per_ctrlr
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:30:-gpgpu_dram_buswidth
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:32:-gpgpu_dram_burst_length
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:45:-gpgpu_dram_timing_opt
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:59:-gpgpu_dram_timing_opt
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:73:-gpgpu_mem_address_mask
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config.cu:74:-gpgpu_mem_addr_mapping
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/mem/mem_config/mem_config matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:98:-gpgpu_adaptive_cache_config
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:99:-gpgpu_shmem_option
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:101:-gpgpu_unified_l1d_size
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:102:-gpgpu_l1_banks
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:103:-gpgpu_cache
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:107:-gpgpu_gmem_skip_L1D
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config.cu:109:-gpgpu_l1_cache_write_ratio
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_config/l1_config matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_lat/l1_lat.cu:11:-gpgpu_l1_latency
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/l1_cache/l1_lat/l1_lat matches
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shd_config/shd_config matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shd_config/shd_config.cu:18:-gpgpu_shmem_size
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shd_config/shd_config.cu:20:-gpgpu_shmem_sizeDefault
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shd_config/shd_config.cu:22:-gpgpu_shmem_per_block
+Binary file /accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shared_lat/shared_lat matches
+/accel-sim-framework/util/tuner/GPU_Microbenchmark/ubench/shd/shared_lat/shared_lat.cu:92:-gpgpu_smem_latency

@@ -1,0 +1,97 @@
+GPU Benchmark Correlation Analysis Summary
+==================================================
+
+Configuration Performance Summary:
+-----------------------------------
+Config: A30_MIG_1g.6gb-SASS-LINEAR-RR-256B-FRFCFS
+  Correlation: 0.9560
+  Error: 34.81%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-GTO-256B-FRFCFS
+  Correlation: 0.9538
+  Error: 35.14%
+
+Config: A30_MIG_1g.6gb-SASS
+  Correlation: 0.9051
+  Error: 44.34%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-RR-256B-FRFCFS
+  Correlation: 0.8867
+  Error: 48.42%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-GTO-256B-FRFCFS
+  Correlation: 0.8726
+  Error: 51.74%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-RR-32B-FRFCFS
+  Correlation: 0.8291
+  Error: 55.73%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-GTO-32B-FRFCFS
+  Correlation: 0.7587
+  Error: 65.87%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-RR-32B-FRFCFS
+  Correlation: 0.7092
+  Error: 76.05%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-GTO-32B-FRFCFS
+  Correlation: 0.6495
+  Error: 85.53%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-RR-256B-FCFS
+  Correlation: 0.5340
+  Error: 97.76%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-GTO-256B-FCFS
+  Correlation: 0.5230
+  Error: 101.12%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-RR-32B-FCFS
+  Correlation: 0.4375
+  Error: 117.80%
+
+Config: A30_MIG_1g.6gb-SASS-LINEAR-GTO-32B-FCFS
+  Correlation: 0.4259
+  Error: 122.65%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-RR-256B-FCFS
+  Correlation: 0.3084
+  Error: 158.93%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-GTO-256B-FCFS
+  Correlation: 0.3003
+  Error: 165.37%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-RR-32B-FCFS
+  Correlation: 0.2696
+  Error: 183.54%
+
+Config: A30_MIG_1g.6gb-SASS-IPOLY-GTO-32B-FCFS
+  Correlation: 0.2636
+  Error: 187.75%
+
+
+Best Performing Configurations:
+--------------------------------
+1. A30_MIG_1g.6gb-SASS-LINEAR-RR-256B-FRFCFS (r = 0.9560)
+2. A30_MIG_1g.6gb-SASS-LINEAR-GTO-256B-FRFCFS (r = 0.9538)
+3. A30_MIG_1g.6gb-SASS (r = 0.9051)
+
+Benchmark Correlation Summary:
+------------------------------
+l1_bw_32f/NO_ARGS: r = nan (p = nan)
+l1_bw_64f/NO_ARGS: r = nan (p = nan)
+l1_bw_128/NO_ARGS: r = nan (p = nan)
+l1_lat/NO_ARGS: r = nan (p = nan)
+l2_bw_32f/NO_ARGS: r = nan (p = nan)
+l2_bw_64f/NO_ARGS: r = nan (p = nan)
+l2_lat/NO_ARGS: r = nan (p = nan)
+mem_bw/NO_ARGS: r = nan (p = nan)
+mem_lat/NO_ARGS: r = nan (p = nan)
+shared_bw/NO_ARGS: r = nan (p = nan)
+shared_lat/NO_ARGS: r = nan (p = nan)
+MaxFlops/NO_ARGS: r = nan (p = nan)
+l1_shared_bw/NO_ARGS: r = nan (p = nan)
+l1_bw_32f_unroll/NO_ARGS: r = nan (p = nan)
+l1_bw_32f_unroll_large/NO_ARGS: r = nan (p = nan)
