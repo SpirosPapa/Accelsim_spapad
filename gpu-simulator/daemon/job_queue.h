@@ -6,13 +6,14 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>  // for std::min
+#include <algorithm>  
 
 struct Job {
     std::string id;
     std::string trace_dir;
     std::string out_dir;   // <-- NEW: per-job output directory
-    // std::vector<unsigned> sms; // (optional) keep for future SM selection
+    bool use_all_sms = true;
+    std::vector<unsigned> sm_ids;
 };
 
 class JobQueue {

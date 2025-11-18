@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 #ifndef TRACE_DRIVEN_H
 #define TRACE_DRIVEN_H
@@ -102,13 +103,18 @@ class trace_kernel_info_t : public kernel_info_t {
   bool was_launched() { return m_was_launched; }
 
   void set_launched() { m_was_launched = true; }
-
+  // --- SPAPAD: SM-affinity support ---------------------------------
+  void set_allowed_sms(const std::vector<unsigned> &sm_ids,unsigned num_sms);
+  bool is_sm_allowed(unsigned sm_id) const;
  private:
   trace_config *m_tconfig;
   const std::unordered_map<std::string, OpcodeChar> *OpcodeMap;
   trace_parser *m_parser;
   kernel_trace_t *m_kernel_trace_info;
   bool m_was_launched;
+  // NEW SPAPAD
+  std::vector<bool> allowed_sm_mask;
+
 
   friend class trace_shd_warp_t;
 };

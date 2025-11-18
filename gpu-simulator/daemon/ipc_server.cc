@@ -56,36 +56,6 @@ IpcServer::IpcServer(const std::string& socket_p): socket_path(socket_p){}
 IpcServer::~IpcServer(){stop();}
 
 
-/*
-bool IpcServer::start(Handler h){
-    handler = std::move(h);
-    listen_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
-    if (listen_fd<0){
-        std::perror("socket");
-        return false;
-    }
-    ::unlink(socket_path.c_str()); // unlink old .sock if server crashes it persists
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    std::snprintf(addr.sun_path,sizeof(addr.sun_path),"%s",socket_path.c_str());
-    if (::bind(listen_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-        std::perror("bind");
-        ::close(listen_fd);
-        listen_fd = -1;
-        return false;
-    }
-    if(::listen(listen_fd,16)<0){
-        std::perror("listen");
-        ::close(listen_fd);
-        listen_fd = -1;
-        return false;
-    }
-    running = true;
-    th = std::thread(&IpcServer::run_accept_loop, this);
-    return true;
-}
-*/
-
 bool IpcServer::start(Handler h){
     handler = std::move(h);
 

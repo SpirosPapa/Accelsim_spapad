@@ -13,4 +13,5 @@ gpu-simulator/gpgpu-sim
 extern
 gpu-simulator/accel_sim.pyi
 compile_commands.json
-.cache
+.cachecuda-samples/
+util/tuner/GPU_Microbenchmark/A30_bin/

@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <mutex>   // for std::mutex
 
 namespace fs = std::filesystem;
 
@@ -85,8 +86,66 @@ static std::vector<std::string> split_ws(const std::string& s) {
   return v;
 }
 
-// Parse: "SUBMIT <trace_path> [out=/path]"
-static std::string handle_line(JobQueue& q, DaemonStatus& st, const std::string& line) {
+// Parse "sms=0,1,2" or "sms=-1" into out_ids.
+// Returns true on success. On failure, fills err_json with a JSON error reply.
+static bool parse_sm_list(const std::string& spec,
+                          unsigned total_sms,
+                          std::vector<unsigned>& out_ids,
+                          std::string& err_json) {
+  out_ids.clear();
+
+  // "-1" or empty => use all SMs 
+  if (spec.empty() || spec == "-1") {
+    return true;
+  }
+
+  std::istringstream ss(spec);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    item = trim(item);
+    if (item.empty()) continue;
+
+    int v = 0;
+    try {
+      size_t pos = 0;
+      v = std::stoi(item, &pos);
+      if (pos != item.size()) throw std::invalid_argument("junk");
+    } catch (...) {
+      std::ostringstream os;
+      os << "{\"ok\":false,\"error\":\"invalid SM id '" << item << "'\"}";
+      err_json = os.str();
+      out_ids.clear();
+      return false;
+    }
+
+    if (v == -1) {
+      err_json =
+          "{\"ok\":false,\"error\":\"-1 (all SMs) cannot be mixed with explicit SM ids\"}";
+      out_ids.clear();
+      return false;
+    }
+
+    if (v < 0 || static_cast<unsigned>(v) >= total_sms) {
+      std::ostringstream os;
+      os << "{\"ok\":false,\"error\":\"THE GPU HAS " << total_sms
+         << " SM WITH ID'S 0-" << (total_sms ? (total_sms - 1) : 0)
+         << " PLEASE GIVE ID'S THAT MATCH WITH THESE OR -1 TO RUN ON ALL SM\"}";
+      err_json = os.str();
+      out_ids.clear();
+      return false;
+    }
+
+    out_ids.push_back(static_cast<unsigned>(v));
+  }
+
+  return true;
+}
+
+// Parse: "SUBMIT <trace_path> [out=/path] [sms=...]"
+static std::string handle_line(JobQueue& q,
+                               DaemonStatus& st,
+                               accel_sim_framework& fw,
+                               const std::string& line) {
   if (line.rfind("SUBMIT ", 0) == 0) {
     auto payload = trim(line.substr(7));
     auto toks = split_ws(payload);
@@ -94,17 +153,34 @@ static std::string handle_line(JobQueue& q, DaemonStatus& st, const std::string&
 
     Job j;
     j.trace_dir = toks[0];
-    // id based on content + time
-    j.id = std::to_string(std::hash<std::string>{}(j.trace_dir + std::to_string(std::time(nullptr))));
 
-    // optional out=...
+    // id based on content + time
+    j.id = std::to_string(
+        std::hash<std::string>{}(j.trace_dir + std::to_string(std::time(nullptr))));
+
     j.out_dir.clear();
+    // IMPORTANT: make sure Job has: std::vector<unsigned> sm_ids;
+    j.sm_ids.clear();
+
+    // Need SM count for validation
+    unsigned total_sms = fw.get_num_sms();
+
+    // optional args: out=..., sms=...
     for (size_t i = 1; i < toks.size(); ++i) {
       const auto& t = toks[i];
       if (t.rfind("out=", 0) == 0) {
         j.out_dir = t.substr(4);
+      } else if (t.rfind("sms=", 0) == 0) {
+        std::string spec = t.substr(4);
+        std::string err_json;
+        if (!parse_sm_list(spec, total_sms, j.sm_ids, err_json)) {
+          // invalid SM list => reject submission
+          return err_json;
+        }
+        // if spec == "-1" or empty => j.sm_ids stays empty => use all SMs
       }
     }
+
     if (j.out_dir.empty()) {
       j.out_dir = "/tmp/accelsim_job_" + j.id;
     }
@@ -161,7 +237,9 @@ int main(int argc, const char** argv) {
   DaemonStatus st;
 
   IpcServer srv("/tmp/accelsim.sock");
-  if (!srv.start([&](const std::string& s){ return handle_line(jq, st, s); })) {
+  if (!srv.start([&](const std::string& s){
+        return handle_line(jq, st, fw, s);
+      })) {
     std::cerr << "Failed to start IPC server\n";
     return 1;
   }
@@ -186,8 +264,11 @@ int main(int argc, const char** argv) {
         std::cerr << "WARN: failed to redirect logs to " << j.out_dir << "\n";
       }
 
-      // Run the job
+      // Configure SM mask for this job (empty => all SMs)
       fw.soft_reset_for_next_job();
+      bool use_all_sms = j.sm_ids.empty();
+      fw.configure_sm_mask_for_next_job(use_all_sms, j.sm_ids);
+
       fw.load_trace(j.trace_dir);
       fw.run_one_job();
 

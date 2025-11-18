@@ -186,6 +186,12 @@ trace_kernel_info_t *accel_sim_framework::create_kernel_info(kernel_trace_t *ker
   trace_kernel_info_t *kernel_info = new trace_kernel_info_t(
       gridDim, blockDim, function_info, parser, config, kernel_trace_info);
 
+  // NEW: apply per-job SM mask SPAPAD
+  if (!job_use_all_sms_ && !job_sm_ids_.empty()) {
+    unsigned num_sms = get_num_sms();
+    kernel_info->set_allowed_sms(job_sm_ids_, num_sms);
+  }
+
   return kernel_info;
 }
 
@@ -244,6 +250,13 @@ gpgpu_sim *accel_sim_framework::gpgpu_trace_sim_init_perf_model(
 //       gpgpu_trace_sim_init_perf_model(argc, argv, m_gpgpu_context, &tconfig);
 //   m_gpgpu_sim->init();
 // }
+
+unsigned accel_sim_framework::get_num_sms() const {
+  assert(m_gpgpu_sim);
+  // gpgpu_sim_config::num_shader() normally returns total # of SMs.
+  return m_gpgpu_sim->get_config().num_shader();
+}
+
 
 void accel_sim_framework::build_gpu_once(int argc, const char **argv) {
   if (m_gpgpu_sim) return;
@@ -327,7 +340,8 @@ void accel_sim_framework::soft_reset_for_next_job() {
   busy_streams.clear();
   kernels_info.clear();
   commandlist.clear();
-
+  job_use_all_sms_ = true;
+  job_sm_ids_.clear();
   // to be implemented
   // m_gpgpu_sim->get_stats()->reset();          
   // m_gpgpu_sim->reset_cycle_counters();      
@@ -342,5 +356,16 @@ accel_sim_framework::accel_sim_framework()
     active(false),
     sim_cycles(false),
     window_size(0),
-    commandlist_index(0) {
+    commandlist_index(0),
+    job_use_all_sms_(true) {
+}
+
+void accel_sim_framework::configure_sm_mask_for_next_job(bool use_all_sms, const std::vector<unsigned>& sm_ids) {
+  if (use_all_sms || sm_ids.empty()) {
+    job_use_all_sms_ = true;
+    job_sm_ids_.clear();
+  } else {
+    job_use_all_sms_ = false;
+    job_sm_ids_ = sm_ids;
+  }
 }

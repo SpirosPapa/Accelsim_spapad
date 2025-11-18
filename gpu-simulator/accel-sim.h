@@ -61,6 +61,8 @@ class accel_sim_framework {
   void load_trace(const std::string& trace_path);   // points tracer to a job
   void run_one_job();                                // blocks until job done
   void soft_reset_for_next_job();                    // clears runtime state only
+  unsigned get_num_sms() const;
+  void configure_sm_mask_for_next_job(bool use_all_sms,const std::vector<unsigned>& sm_ids);  
  private:
   void init_job_state_(); 
   gpgpu_context *m_gpgpu_context;
@@ -77,5 +79,9 @@ class accel_sim_framework {
   std::vector<unsigned long long> busy_streams;
   std::vector<trace_kernel_info_t *> kernels_info;
   std::vector<trace_command> commandlist;
+
+  // Per-job SM restriction
+  bool job_use_all_sms_ = true;
+  std::vector<unsigned> job_sm_ids_;
 
 };

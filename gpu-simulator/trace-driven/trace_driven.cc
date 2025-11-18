@@ -95,12 +95,11 @@ trace_kernel_info_t::trace_kernel_info_t(dim3 gridDim, dim3 blockDim,
                                          class trace_config *config,
                                          kernel_trace_t *kernel_trace_info)
     : kernel_info_t(gridDim, blockDim, m_function_info,
-                    kernel_trace_info->cuda_stream_id) {
+                    kernel_trace_info->cuda_stream_id),allowed_sm_mask() {
   m_parser = parser;
   m_tconfig = config;
   m_kernel_trace_info = kernel_trace_info;
   m_was_launched = false;
-
   // resolve the binary version
   if (kernel_trace_info->binary_verion == AMPERE_RTX_BINART_VERSION ||
       kernel_trace_info->binary_verion == AMPERE_A100_BINART_VERSION)
@@ -665,4 +664,34 @@ void trace_shader_core_ctx::issue_warp(register_set &warp,
   // delete warp_inst_t class here, it is not required anymore by gpgpu-sim
   // after issue
   delete pI;
+}
+
+// SPAPAD SET AFFINITY
+
+void trace_kernel_info_t::set_allowed_sms(const std::vector<unsigned> &sm_ids,
+                                          unsigned num_sms) {
+  if (sm_ids.empty()) {
+    allowed_sm_mask.clear(); 
+    return;
+  }
+
+  // Otherwise, build a mask of size num_sms, all false initially.
+  allowed_sm_mask.assign(num_sms, false);
+
+  // We assume sm_ids has already been validated by the submission layer
+  for (unsigned sm_id : sm_ids) {
+    if (sm_id < num_sms) {
+      allowed_sm_mask[sm_id] = true;
+    }
+  }
+}
+
+bool trace_kernel_info_t::is_sm_allowed(unsigned sm_id) const {
+  if (allowed_sm_mask.empty())
+    return true;
+
+  if (sm_id >= allowed_sm_mask.size())
+    return false;
+
+  return allowed_sm_mask[sm_id];
 }
