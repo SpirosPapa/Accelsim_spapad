@@ -27,7 +27,7 @@ namespace{
             }
             if (ch == '\n') break;
             out.push_back(ch);
-            if(out.size()> 1<<20) break; //1MB safety
+            if(out.size()> 1<<20) break; 
         }
         return out;
     }
@@ -59,7 +59,6 @@ IpcServer::~IpcServer(){stop();}
 bool IpcServer::start(Handler h){
     handler = std::move(h);
 
-    // Avoid SIGPIPE on write to a closed client
     std::signal(SIGPIPE, SIG_IGN);
 
     listen_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
@@ -78,7 +77,6 @@ bool IpcServer::start(Handler h){
         return false;
     }
 
-    // Restrict permissions (owner only)
     ::chmod(socket_path.c_str(), 0700);
 
     if(::listen(listen_fd, 16) < 0) {
@@ -116,8 +114,8 @@ void IpcServer::run_accept_loop(){
             continue;
         }
 
-        // Optional: set a recv timeout so a client that never sends '\n' can't hang us
-        timeval tv{5,0}; // 5s
+        // set a recv timeout 
+        timeval tv{5,0}; 
         ::setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
         std::string line = read_line(client_fd);

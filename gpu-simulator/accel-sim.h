@@ -25,11 +25,11 @@
 
 class accel_sim_framework {
  public:
-  accel_sim_framework();  // empty constructor (daemon mode etc.)
+  accel_sim_framework();  
   accel_sim_framework(int argc, const char **argv);
   accel_sim_framework(std::string config_file, std::string trace_file);
 
-  // ----- legacy single-job API (CLI-style) ----------------------------------
+  // ----- legacy API ----------------------------------
   void init() {
     active = false;
     sim_cycles = false;
@@ -50,7 +50,7 @@ class accel_sim_framework {
     kernels_info.reserve(window_size);
   }
 
-  // Build GPU once (from -config); do NOT bind a trace here (daemon mode).
+  // Build GPU once (from -config). Beware it uses a sing merged daemon config
   void build_gpu_once(int argc, const char **argv);
 
   void simulation_loop();
@@ -83,7 +83,6 @@ class accel_sim_framework {
                  const std::vector<unsigned> &sm_ids,
                  const std::string &job_id);
 
-  // Is there any remaining work (jobs not done OR GPU still active)?
   bool has_active_work() const;
 
   // Advance simulation by:
@@ -92,7 +91,6 @@ class accel_sim_framework {
   //   3) cleaning up at most one finished kernel
   void step_one_cycle();
 
-  // Return and clear the list of job_ids that finished since last call
   std::vector<std::string> collect_finished_jobs();
 
   struct KernelStatSnapshot {
@@ -102,7 +100,7 @@ class accel_sim_framework {
   };
 
  private:
-  // Per-job runtime state for the new concurrent daemon
+  // Per-job runtime state for daemon
   struct JobRuntime {
     std::string job_id;
     std::string trace_dir;
@@ -121,7 +119,7 @@ class accel_sim_framework {
     std::vector<trace_kernel_info_t *> kernels_info;
     std::vector<unsigned long long> busy_streams;
 
-    // NEW: local_stream_id -> global_stream_id
+    // for the remapping of stream id's
     std::unordered_map<unsigned long long, unsigned long long> stream_remap;
 
     bool done = false;
@@ -132,13 +130,12 @@ class accel_sim_framework {
   unsigned long long remap_stream_id(JobRuntime &job,
                                      unsigned long long local_sid);
 
-  // Global counter for assigning new stream ids
   unsigned long long next_global_stream_id_ = 1;
 
   
-  void init_job_state_();  // legacy (single-job) helper
+  void init_job_state_();  // legacy 
 
-  // NEW helpers for multi-job scheduling
+  // for multi-job scheduling
   void parse_and_launch_for_job(size_t job_index);
   void cleanup_finished_kernel(unsigned finished_kernel_uid);
 
@@ -148,7 +145,7 @@ class accel_sim_framework {
   trace_parser tracer;  // legacy single-job parser
   gpgpu_sim *m_gpgpu_sim;
 
-  // Legacy single-job fields (used by simulation_loop & friends)
+  // Legacy fields for single jobs
   bool concurrent_kernel_sm;
   bool active;
   bool sim_cycles;
@@ -158,16 +155,15 @@ class accel_sim_framework {
   std::vector<trace_kernel_info_t *> kernels_info;
   std::vector<trace_command> commandlist;
 
-  // Per-job SM restriction for legacy path
   bool job_use_all_sms_ = true;
   std::vector<unsigned> job_sm_ids_;
 
-  // NEW multi-job state
+  // multi-job state
   std::vector<JobRuntime> jobs_;                    // all jobs known to fw
   std::vector<std::string> finished_job_ids_;       // jobs finished since last
   std::unordered_map<unsigned, size_t> kernel_uid_to_job_;  // kernel uid -> job idx
 
-  bool sim_cycles_any_ = false;   // did we advance at least one cycle this step?
+  bool sim_cycles_any_ = false;   // check wether we advanced one cycle since last step
   bool trace_config_parsed_ = false;
   bool stopped_due_to_limit_ = false;
   std::unordered_map<unsigned , KernelStatSnapshot> kernel_start_stats_;

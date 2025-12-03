@@ -27,7 +27,6 @@ public:
         cv_.notify_one();
     }
 
-    // Blocking pop: returns false if queue was closed and is empty (caller should exit)
     bool pop_blocking(Job& out) {
         std::unique_lock<std::mutex> lk(mx_);
         cv_.wait(lk, [&]{ return closed_ || !q_.empty(); });
@@ -37,11 +36,7 @@ public:
         return true;
     }
 
-    // NEW: Non-blocking pop. Returns true if a job was popped, false if queue is empty.
-    //
-    // This is what the concurrent scheduler loop will typically use:
-    // it can poll for new jobs and still keep stepping the simulator
-    // even when no new jobs are arriving.
+    // Non-blocking pop. Reurtns true if a job was popped, false if queue is empty.
     bool try_pop(Job& out) {
         std::lock_guard<std::mutex> lk(mx_);
         if (q_.empty()) return false;
@@ -63,12 +58,12 @@ public:
         cv_.notify_all();
     }
 
-    // Shallow copy snapshot of up to max_items queued jobs
+    // Take a snapshot of the current job 
     std::vector<Job> snapshot(size_t max_items = 32) const {
         std::lock_guard<std::mutex> lk(mx_);
         std::vector<Job> v;
         v.reserve(std::min(max_items, q_.size()));
-        std::queue<Job> tmp = q_; // copy under lock, then read
+        std::queue<Job> tmp = q_; 
         while (!tmp.empty() && v.size() < max_items) {
             v.push_back(tmp.front());
             tmp.pop();

@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-// ------------------- Job + daemon state -------------------------------------
+// Job + daemon state 
 
 struct Job {
   std::string id;
@@ -62,15 +62,12 @@ static std::vector<std::string> split_ws(const std::string &s) {
   return v;
 }
 
-// Parse "sms=0,1,2" or "sms=-1" into out_ids.
-// Returns true on success. On failure, fills err_json with a JSON error reply.
 static bool parse_sm_list(const std::string &spec,
                           unsigned total_sms,
                           std::vector<unsigned> &out_ids,
                           std::string &err_json) {
   out_ids.clear();
 
-  // "-1" or empty => use all SMs
   if (spec.empty() || spec == "-1") {
     return true;
   }
@@ -117,7 +114,6 @@ static bool parse_sm_list(const std::string &spec,
   return true;
 }
 
-// Helper to count jobs by state (for STATUS)
 static void count_jobs(const DaemonState &st,
                        size_t &pending,
                        size_t &running,
@@ -134,13 +130,12 @@ static void count_jobs(const DaemonState &st,
 
 // ------------------- IPC command handler ------------------------------------
 
-// Parse: "SUBMIT <trace_path> [out=/path] [sms=...]"
+// Parse: "SUBMIT <trace_path> out=/path sms"
 static std::string handle_line(DaemonState &st,
                                unsigned total_sms,
                                const std::string &line) {
   const std::string cmd = trim(line);
 
-  // ---- SUBMIT --------------------------------------------------------------
   if (cmd.rfind("SUBMIT ", 0) == 0) {
     auto payload = trim(cmd.substr(7));
     auto toks = split_ws(payload);
@@ -150,7 +145,7 @@ static std::string handle_line(DaemonState &st,
     Job job;
     job.trace_dir = toks[0];
 
-    // id based on content + time
+    // incoming job_id based on time
     job.id = std::to_string(
         std::hash<std::string>{}(job.trace_dir + std::to_string(std::time(nullptr))));
 
@@ -158,7 +153,6 @@ static std::string handle_line(DaemonState &st,
     job.sm_ids.clear();
     job.use_all_sms = true;
 
-    // optional args: out=..., sms=...
     for (size_t i = 1; i < toks.size(); ++i) {
       const auto &t = toks[i];
       if (t.rfind("out=", 0) == 0) {
@@ -168,14 +162,12 @@ static std::string handle_line(DaemonState &st,
         std::string err_json;
         std::vector<unsigned> sm_ids;
         if (!parse_sm_list(spec, total_sms, sm_ids, err_json)) {
-          // invalid SM list => reject submission
           return err_json;
         }
         if (!sm_ids.empty()) {
           job.use_all_sms = false;
           job.sm_ids = std::move(sm_ids);
         } else {
-          // "-1" / empty => all SMs
           job.use_all_sms = true;
           job.sm_ids.clear();
         }
@@ -199,18 +191,15 @@ static std::string handle_line(DaemonState &st,
     return "{\"ok\":true,\"accepted\":true}";
   }
 
-  // ---- PING ----------------------------------------------------------------
   if (cmd == "PING") {
     return "{\"ok\":true,\"pong\":true}";
   }
 
-  // ---- SHUTDOWN ------------------------------------------------------------
   if (cmd == "SHUTDOWN") {
     st.shutdown_requested.store(true);
     return "{\"ok\":true,\"shutdown\":true}";
   }
 
-  // ---- STATUS --------------------------------------------------------------
   if (cmd == "STATUS") {
     DaemonState snapshot;
     {
@@ -229,7 +218,7 @@ static std::string handle_line(DaemonState &st,
     return os.str();
   }
 
-  // ---- QUEUE: list pending jobs -------------------------------------------
+  // list pending jobs
   if (cmd == "QUEUE") {
     std::vector<JobRecord> snapshot;
     {
@@ -255,9 +244,7 @@ static std::string handle_line(DaemonState &st,
   return "{\"ok\":false,\"error\":\"unknown command\"}";
 }
 
-// ------------------- Job scheduling with SM reservation ---------------------
 
-// Build per-job SM mask (vector<bool> of length total_sms)
 static std::vector<bool> build_sm_mask(const Job &job, unsigned total_sms) {
   std::vector<bool> mask(total_sms, false);
   if (job.use_all_sms || job.sm_ids.empty()) {
@@ -270,7 +257,6 @@ static std::vector<bool> build_sm_mask(const Job &job, unsigned total_sms) {
   return mask;
 }
 
-// Reservation policy: explained in comments in previous messages.
 static std::vector<size_t> pick_jobs_to_start(const std::vector<JobRecord> &jobs,
                                               unsigned total_sms) {
   std::vector<size_t> to_start;
@@ -313,10 +299,8 @@ static std::vector<size_t> pick_jobs_to_start(const std::vector<JobRecord> &jobs
   return to_start;
 }
 
-// ------------------- main: daemon + simulation loop -------------------------
 
 int main(int argc, const char **argv) {
-  // Build the GPU once from -config (no trace yet).
   accel_sim_framework fw;
   fw.build_gpu_once(argc, argv);
 
@@ -333,19 +317,19 @@ int main(int argc, const char **argv) {
   }
 
   std::cout << "Accel-Sim daemon listening on /tmp/accelsim.sock\n";
-
+  // in each iteration we check based on the current snpashot/jobs_waiting wich job to start(if possible)
+  // if a job is to be launched create the out_dir and inform terminal
+  // After we start the job we execute one gpu cycle
+  // in the end we check wether any job is finished
   while (true) {
-    // --- 1. Snapshot jobs under lock ----------------------------------------
     std::vector<JobRecord> snapshot;
     {
       std::lock_guard<std::mutex> lk(state.mx);
       snapshot = state.jobs;
     }
 
-    // --- 2. Decide which pending jobs to start according to reservation policy
     std::vector<size_t> to_start = pick_jobs_to_start(snapshot, total_sms);
 
-    // --- 3. Start those jobs in the real state + forward to fw --------------
     {
       std::lock_guard<std::mutex> lk(state.mx);
       for (size_t idx : to_start) {
@@ -368,10 +352,8 @@ int main(int argc, const char **argv) {
       }
     }
 
-    // --- 4. Always advance simulation by one cycle --------------------------
     fw.step_one_cycle();
 
-    // --- 5. See which jobs finished in this step ----------------------------
     {
       std::vector<std::string> finished_ids = fw.collect_finished_jobs();
       if (!finished_ids.empty()) {
@@ -387,7 +369,7 @@ int main(int argc, const char **argv) {
       }
     }
 
-    // --- 6. Exit / idle logic -----------------------------------------------
+    //(shutdown option)
     bool shutdown = state.shutdown_requested.load();
     size_t pending = 0, running = 0, finished = 0;
     {
