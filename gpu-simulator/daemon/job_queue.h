@@ -1,4 +1,3 @@
-// gpu-simulator/gpgpu-sim/src/daemon/job_queue.h
 #pragma once
 #include <mutex>
 #include <condition_variable>
@@ -6,18 +5,19 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>  
+#include <algorithm>
 
 struct Job {
     std::string id;
     std::string trace_dir;
-    std::string out_dir;   // <-- NEW: per-job output directory
+    std::string out_dir;   // per-job output directory
     bool use_all_sms = true;
-    std::vector<unsigned> sm_ids;
+    std::vector<unsigned> sm_ids; // SM affinity mask for this job
 };
 
 class JobQueue {
 public:
+    // Push a new job into the queue (called from IPC handler thread)
     void push(Job j) {
         {
             std::lock_guard<std::mutex> lk(mx_);
@@ -27,10 +27,23 @@ public:
         cv_.notify_one();
     }
 
-    // returns false if queue was closed and empty (caller should exit)
+    // Blocking pop: returns false if queue was closed and is empty (caller should exit)
     bool pop_blocking(Job& out) {
         std::unique_lock<std::mutex> lk(mx_);
         cv_.wait(lk, [&]{ return closed_ || !q_.empty(); });
+        if (q_.empty()) return false;
+        out = std::move(q_.front());
+        q_.pop();
+        return true;
+    }
+
+    // NEW: Non-blocking pop. Returns true if a job was popped, false if queue is empty.
+    //
+    // This is what the concurrent scheduler loop will typically use:
+    // it can poll for new jobs and still keep stepping the simulator
+    // even when no new jobs are arriving.
+    bool try_pop(Job& out) {
+        std::lock_guard<std::mutex> lk(mx_);
         if (q_.empty()) return false;
         out = std::move(q_.front());
         q_.pop();

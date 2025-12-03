@@ -97,6 +97,11 @@ class trace_kernel_info_t : public kernel_info_t {
   unsigned long long get_cuda_stream_id() {
     return m_kernel_trace_info->cuda_stream_id;
   }
+  // NEW: allow changing the CUDA stream id (used by daemon for per-job remapping)
+  void set_cuda_stream_id(unsigned long long sid) {
+    m_kernel_trace_info->cuda_stream_id = sid;
+  }
+
 
   kernel_trace_t *get_trace_info() { return m_kernel_trace_info; }
 

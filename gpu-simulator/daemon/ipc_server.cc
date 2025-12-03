@@ -120,9 +120,11 @@ void IpcServer::run_accept_loop(){
         timeval tv{5,0}; // 5s
         ::setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-        // Simple: handle ONE line then close (prevents client hogging)
         std::string line = read_line(client_fd);
         if(!line.empty()){
+            std::cout << "[ipc] received line: '" << line
+                      << "' (len=" << line.size() << ")\n";
+
             std::string reply;
             try {
                 reply = handler ? handler(line)
@@ -130,8 +132,13 @@ void IpcServer::run_accept_loop(){
             } catch (...) {
                 reply = "{\"ok\":false,\"error\":\"exception in handler\"}";
             }
+
+            std::cout << "[ipc] reply: '" << reply
+                      << "' (len=" << reply.size() << ")\n";
+
             (void)write_line(client_fd, reply);
         }
         ::close(client_fd);
+
     }
 }
