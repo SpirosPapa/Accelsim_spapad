@@ -32,6 +32,7 @@
 #include <bitset>
 #include "../abstract_hardware_model.h"
 #include "addrdec.h"
+#include <limits>
 
 enum mf_type {
   READ_REQUEST = 0,
@@ -81,6 +82,17 @@ class mem_fetch {
   void set_partition(unsigned sub_partition_id) {
     m_raw_addr.sub_partition = sub_partition_id;
   }
+
+  // static constexpr unsigned kInvalidKernelUid =
+  //     std::numeric_limits<unsigned>::max();
+
+  static constexpr unsigned kInvalidKernelUid = 0;
+
+  void set_kernel_uid(unsigned kid) { m_kernel_uid = kid; }
+  unsigned get_kernel_uid() const { return m_kernel_uid; }
+  bool has_kernel_uid() const { return m_kernel_uid != kInvalidKernelUid; }
+
+
   unsigned get_data_size() const { return m_data_size; }
   void set_data_size(unsigned size) { m_data_size = size; }
   unsigned get_ctrl_size() const { return m_ctrl_size; }
@@ -108,6 +120,8 @@ class mem_fetch {
   unsigned get_icnt_receive_time() const { return m_icnt_receive_time; }
   unsigned long long get_streamID() const { return m_streamID; }
 
+
+
   enum mem_access_type get_access_type() const { return m_access.get_type(); }
   const active_mask_t &get_access_warp_mask() const {
     return m_access.get_warp_mask();
@@ -132,11 +146,15 @@ class mem_fetch {
 
  private:
   // request source information
+
+
   unsigned m_request_uid;
   unsigned m_sid;
   unsigned m_tpc;
   unsigned m_wid;
 
+  unsigned m_kernel_uid;
+  bool     m_has_kernel_uid = false;
   // where is this request now?
   enum mem_fetch_status m_status;
   unsigned long long m_status_change;

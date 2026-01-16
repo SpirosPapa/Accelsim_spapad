@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <cstdint>
 
 #ifndef TRACE_DRIVEN_H
 #define TRACE_DRIVEN_H
@@ -97,11 +98,24 @@ class trace_kernel_info_t : public kernel_info_t {
   unsigned long long get_cuda_stream_id() {
     return m_kernel_trace_info->cuda_stream_id;
   }
+  //new
+  // unsigned long long get_cuda_stream_id() const override {
+  // return m_kernel_trace_info->cuda_stream_id;
+  // }
+
   // NEW: allow changing the CUDA stream id (used by daemon for per-job remapping)
-  void set_cuda_stream_id(unsigned long long sid) {
-    m_kernel_trace_info->cuda_stream_id = sid;
+  // void set_cuda_stream_id(unsigned long long sid) {
+  //   m_kernel_trace_info->cuda_stream_id = sid;
+  // }
+
+  void set_cuda_stream_id(unsigned long long sid) override {
+    m_kernel_trace_info->cuda_stream_id = sid;   
+    kernel_info_t::set_cuda_stream_id(sid);     
+    // or: set_streamID(sid);
   }
 
+  void set_job_uid(uint32_t uid) { m_job_uid = uid; }
+  uint32_t get_job_uid() const { return m_job_uid; }
 
   kernel_trace_t *get_trace_info() { return m_kernel_trace_info; }
 
@@ -112,6 +126,7 @@ class trace_kernel_info_t : public kernel_info_t {
   void set_allowed_sms(const std::vector<unsigned> &sm_ids,unsigned num_sms);
   bool is_sm_allowed(unsigned sm_id) const;
  private:
+  uint32_t m_job_uid = 0;
   trace_config *m_tconfig;
   const std::unordered_map<std::string, OpcodeChar> *OpcodeMap;
   trace_parser *m_parser;

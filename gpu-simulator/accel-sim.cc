@@ -2,7 +2,6 @@
 #include "accelsim_version.h"
 
 #include <cassert>
-
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -50,7 +49,7 @@ struct ScopedStdoutRedirect {
   }
 };
 
-} // namespace
+}  // namespace
 
 // ---------------------------------------------------------------------------
 // Existing constructors 
@@ -70,8 +69,7 @@ accel_sim_framework::accel_sim_framework(std::string config_file,
       sim_cycles_any_(false),
       trace_config_parsed_(false),
       stopped_due_to_limit_(false),
-      next_global_stream_id_(1)  // <-- NEW
-{
+      next_global_stream_id_(1) {  // ensure deterministic global stream IDs
   std::cout << "Accel-Sim [build " << g_accelsim_version << "]";
   m_gpgpu_context = new gpgpu_context();
 
@@ -104,7 +102,8 @@ accel_sim_framework::accel_sim_framework(int argc, const char **argv)
       job_use_all_sms_(true),
       sim_cycles_any_(false),
       trace_config_parsed_(false),
-      stopped_due_to_limit_(false) {
+      stopped_due_to_limit_(false),
+      next_global_stream_id_(1) {  // <-- ADDED
   std::cout << "Accel-Sim [build " << g_accelsim_version << "]";
   m_gpgpu_context = new gpgpu_context();
 
@@ -132,19 +131,20 @@ accel_sim_framework::accel_sim_framework()
       job_use_all_sms_(true),
       sim_cycles_any_(false),
       trace_config_parsed_(false),
-      stopped_due_to_limit_(false) {}
+      stopped_due_to_limit_(false),
+      next_global_stream_id_(1) {}  // <-- ADDED
 
 // ---------------------------------------------------------------------------
-// Legacy code
+// Legacy single-job code
 // ---------------------------------------------------------------------------
 
 void accel_sim_framework::simulation_loop() {
   // for each kernel
-  // load file
-  // parse and create kernel info
-  // launch
-  // while loop till the end of the end kernel execution
-  // prints stats
+  //   - load file
+  //   - parse and create kernel info
+  //   - launch
+  //   - loop until end of kernel execution
+  //   - print stats
 
   while (commandlist_index < commandlist.size() || !kernels_info.empty()) {
     parse_commandlist();
@@ -162,6 +162,7 @@ void accel_sim_framework::simulation_loop() {
                   << " uid: " << k->get_uid()
                   << " cuda_stream_id: " << k->get_cuda_stream_id()
                   << std::endl;
+        m_gpgpu_sim->note_kernel_launch(k);   // NEW
         m_gpgpu_sim->launch(k);
         k->set_launched();
         busy_streams.push_back(k->get_cuda_stream_id());
@@ -191,9 +192,9 @@ void accel_sim_framework::simulation_loop() {
 }
 
 void accel_sim_framework::parse_commandlist() {
-  // gulp up as many commands as possible - either cpu_gpu_mem_copy
-  // or kernel_launch - until the vector "kernels_info" has reached
-  // the window_size or we have read every command from commandlist
+  // Gulp up as many commands as possible - either cpu_gpu_mem_copy
+  // or kernel_launch - until "kernels_info" has reached "window_size"
+  // or we have read every command from "commandlist".
   while (kernels_info.size() < window_size &&
          commandlist_index < commandlist.size()) {
     trace_kernel_info_t *kernel_info = NULL;
@@ -226,7 +227,7 @@ void accel_sim_framework::parse_commandlist() {
 
 void accel_sim_framework::cleanup(unsigned finished_kernel) {
   trace_kernel_info_t *k = NULL;
-  unsigned long long finished_kernel_cuda_stream_id = -1;
+  unsigned long long finished_kernel_cuda_stream_id = (unsigned long long)-1;
   for (unsigned j = 0; j < kernels_info.size(); j++) {
     k = kernels_info.at(j);
     if (k->get_uid() == finished_kernel ||
@@ -290,7 +291,7 @@ trace_kernel_info_t *accel_sim_framework::create_kernel_info(
   trace_kernel_info_t *kernel_info = new trace_kernel_info_t(
       gridDim, blockDim, function_info, parser, config, kernel_trace_info);
 
-  // Per-job SM restriction (legacy path: using job_use_all_sms_/job_sm_ids_)
+  // Per-job SM restriction 
   if (!job_use_all_sms_ && !job_sm_ids_.empty()) {
     unsigned num_sms = get_num_sms();
     kernel_info->set_allowed_sms(job_sm_ids_, num_sms);
@@ -374,12 +375,16 @@ void accel_sim_framework::build_gpu_once(int argc, const char **argv) {
   std::vector<const char *> av;
   av.reserve(static_cast<size_t>(argc) + 4);
   for (int i = 0; i < argc; ++i) av.push_back(argv[i]);
+
   std::string trace_cfg_full;
+  // If you ever want to auto-add a trace.config near the .config file,
+  // uncomment this and make sure it matches your layout.
   // if (!has_trace_opt && !cfg_dir.empty()) {
   //   trace_cfg_full = cfg_dir + "/trace.config";
   //   av.push_back("-trace_config");
   //   av.push_back(trace_cfg_full.c_str());
   // }
+
   int argc_local = static_cast<int>(av.size());
 
   m_gpgpu_sim = gpgpu_trace_sim_init_perf_model(argc_local, av.data(),
@@ -431,7 +436,7 @@ void accel_sim_framework::soft_reset_for_next_job() {
   commandlist.clear();
   job_use_all_sms_ = true;
   job_sm_ids_.clear();
-  // TODO: if needed, reset gpgpu_sim stats/streams here.
+  // NOTE: we intentionally do not reset m_gpgpu_sim itself here.
 }
 
 void accel_sim_framework::configure_sm_mask_for_next_job(
@@ -462,9 +467,10 @@ void accel_sim_framework::start_job(const std::string &trace_dir,
   }
 
   JobRuntime job;
-  job.job_id    = job_id;
-  job.trace_dir = trace_dir;
-  job.out_dir   = out_dir;
+  job.job_uid = next_job_uid_++;
+  job.job_id      = job_id;
+  job.trace_dir   = trace_dir;
+  job.out_dir     = out_dir;
   job.use_all_sms = use_all_sms;
   job.sm_ids      = sm_ids;
   job.done        = false;
@@ -521,8 +527,7 @@ bool accel_sim_framework::has_active_work() const {
 }
 
 unsigned long long accel_sim_framework::remap_stream_id(
-    JobRuntime &job,
-    unsigned long long local_sid) {
+    JobRuntime &job, unsigned long long local_sid) {
 
   auto it = job.stream_remap.find(local_sid);
   if (it != job.stream_remap.end()) {
@@ -559,8 +564,8 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
 
       kernel_info = create_kernel_info(kernel_trace_info, m_gpgpu_context,
                                        &tconfig, &parser);
-
-      // Apply per-job SM mask 
+      //kernel_info->set_job_uid(job.job_uid);
+      // Apply per-job SM mask (daemon path)
       if (!job.use_all_sms && !job.sm_ids.empty()) {
         unsigned num_sms = get_num_sms();
         kernel_info->set_allowed_sms(job.sm_ids, num_sms);
@@ -578,12 +583,11 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
     }
   }
 
-  // check wich job to launch
+  // 2) Try to launch kernels for this job
   for (auto *k : job.kernels_info) {
     if (k->was_launched()) continue;
 
-    unsigned long long local_sid = k->get_cuda_stream_id();
-
+    unsigned long long local_sid  = k->get_cuda_stream_id();
     unsigned long long global_sid = remap_stream_id(job, local_sid);
 
     bool stream_busy = false;
@@ -608,14 +612,14 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
       break;
     }
 
-    // Actually remap the stream id in the kernel trace
+    // Actually remap the stream id in  kernel trace
     k->set_cuda_stream_id(global_sid);
 
     std::cout << "[fw] launching kernel (job " << job.job_id << ") name: "
               << k->get_name() << " uid: " << k->get_uid()
               << " local_stream_id: " << local_sid
               << " global_stream_id: " << global_sid << std::endl;
-
+    m_gpgpu_sim->note_kernel_launch(k);   // NEW (needs the *global* stream id)
     m_gpgpu_sim->launch(k);
     k->set_launched();
     job.busy_streams.push_back(global_sid);
@@ -623,31 +627,19 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
     unsigned uid = k->get_uid();
     kernel_uid_to_job_[uid] = job_index;
 
-    // Snapshot for the stats printed in the end
-    KernelStatSnapshot snap;
-    unsigned long long curr_cycle_total =
-        (unsigned long long)m_gpgpu_sim->get_gpu_tot_sim_cycle();
-    unsigned long long curr_insn_total =
-        (unsigned long long)m_gpgpu_sim->get_gpu_tot_sim_insn();
-    unsigned long long curr_tot_cta =
-        (unsigned long long)m_gpgpu_sim->get_gpu_tot_issued_cta();
-
-    snap.start_cycle_total    = curr_cycle_total;
-    snap.start_insn_total     = curr_insn_total;
-    snap.start_tot_issued_cta = curr_tot_cta;
-
-    kernel_start_stats_[uid] = snap;
   }
 
-  // Based on legacy execution
+  // Job has only memcpys and no kernels
   if (job.commandlist_index >= job.commandlist.size() &&
-      job.kernels_info.empty() && job.busy_streams.empty() && !job.done) {
+      job.kernels_info.empty() &&
+      job.busy_streams.empty() && !job.done) {
     std::cout << "[fw] job " << job.job_id
               << " has no kernels (only memcpys) -> marking done" << std::endl;
     job.done = true;
     finished_job_ids_.push_back(job.job_id);
   }
 }
+
 void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) {
   if (!finished_kernel_uid) return;
 
@@ -665,11 +657,11 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
   trace_kernel_info_t *k = nullptr;
   unsigned long long finished_stream_id = (unsigned long long)-1;
 
-  // kernel info to print in the end
+  // Info used for per-kernel stats printing
   std::string finished_kernel_name;
   int         finished_kernel_uid_int = -1;
 
-  // based on  legacy cleanup().
+  // Based on legacy cleanup().
   for (size_t j = 0; j < job.kernels_info.size(); ++j) {
     trace_kernel_info_t *cand = job.kernels_info[j];
     if (cand->get_uid() == finished_kernel_uid) {
@@ -679,7 +671,7 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
       finished_kernel_name    = k->get_name();
       finished_kernel_uid_int = (int)k->get_uid();
 
-      // Remove the stream
+      // Remove the stream from job.busy_streams
       unsigned long long sid = k->get_cuda_stream_id();
       for (size_t l = 0; l < job.busy_streams.size(); ++l) {
         if (job.busy_streams[l] == sid) {
@@ -689,8 +681,8 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
         }
       }
 
-      // based on legacy cleanup
       job.parser->kernel_finalizer(k->get_trace_info());
+      m_gpgpu_sim->note_kernel_completion(k);   // MY ADDITION
       delete k->entry();
       delete k;
       job.kernels_info.erase(job.kernels_info.begin() + j);
@@ -700,66 +692,30 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
 
   kernel_uid_to_job_.erase(it);
 
-  // find kernel snapshots
-  bool have_snapshot = false;
-  KernelStatSnapshot snap;
-  auto snap_it = kernel_start_stats_.find(finished_kernel_uid);
-  if (snap_it != kernel_start_stats_.end()) {
-    snap = snap_it->second;
-    have_snapshot = true;
-  }
-  if (have_snapshot) {
-    kernel_start_stats_.erase(snap_it);
-  }
 
-  if (finished_kernel_name.size() && finished_stream_id != (unsigned long long)-1) {
+
+  if (!finished_kernel_name.empty() &&
+      finished_stream_id != (unsigned long long)-1) {
     std::string out_path = job.out_dir + "/kernel_" +
                            std::to_string(finished_kernel_uid) + ".out";
 
-    // redirect results
+    // Redirect stdout so gpu_print_stat prints into job-specific file
     ScopedStdoutRedirect redirect(out_path, /*append=*/false);
 
-    if (have_snapshot) {
-      // Snapshot at the end of execution
-      unsigned long long curr_cycle_total =
-          (unsigned long long)m_gpgpu_sim->get_gpu_tot_sim_cycle();
-      unsigned long long curr_insn_total =
-          (unsigned long long)m_gpgpu_sim->get_gpu_tot_sim_insn();
-      unsigned long long curr_tot_cta =
-          (unsigned long long)m_gpgpu_sim->get_gpu_tot_issued_cta();
+    kernel_stats_view_t view =
+        m_gpgpu_sim->make_kernel_stats_view(finished_kernel_uid);
 
-      unsigned long long delta_cycle =
-          (curr_cycle_total >= snap.start_cycle_total)
-              ? (curr_cycle_total - snap.start_cycle_total)
-              : 0ull;
-      unsigned long long delta_insn =
-          (curr_insn_total >= snap.start_insn_total)
-              ? (curr_insn_total - snap.start_insn_total)
-              : 0ull;
-      unsigned long long delta_cta =
-          (curr_tot_cta >= snap.start_tot_issued_cta)
-              ? (curr_tot_cta - snap.start_tot_issued_cta)
-              : 0ull;
+    m_gpgpu_sim->print_stats(
+        finished_stream_id,
+        &view,
+        finished_kernel_name.c_str(),
+        finished_kernel_uid_int);
 
-      // Build snpashot view
-      kernel_stats_view_t view;
-      view.gpu_sim_cycle      = (long long)delta_cycle;
-      view.gpu_sim_insn       = (long long)delta_insn;
-      view.gpu_tot_sim_cycle  = (long long)(snap.start_cycle_total + delta_cycle);
-      view.gpu_tot_sim_insn   = (long long)(snap.start_insn_total + delta_insn);
-      view.gpu_tot_issued_cta = (long long)(snap.start_tot_issued_cta + delta_cta);
+    m_gpgpu_sim->clear_kernel_stats(finished_kernel_uid);
 
-      view.gpu_occupancy_percent     = -1.0f;
-      view.gpu_tot_occupancy_percent = -1.0f;
-
-      m_gpgpu_sim->print_stats(finished_stream_id,&view,finished_kernel_name.c_str(),finished_kernel_uid_int);
-    } else {
-      // legacy edition
-      m_gpgpu_sim->print_stats(finished_stream_id,nullptr,finished_kernel_name.c_str(),finished_kernel_uid_int);
-    }
   }
 
-  // job done
+  // Mark job as done when everything for this job has drained
   if (job.commandlist_index >= job.commandlist.size() &&
       job.kernels_info.empty() &&
       job.busy_streams.empty() && !job.done) {
@@ -774,12 +730,12 @@ void accel_sim_framework::step_one_cycle() {
 
   sim_cycles_any_ = false;
 
-  //  Feed new kernels for each active job
+  // 1) Feed new kernels for each active job
   for (size_t idx = 0; idx < jobs_.size(); ++idx) {
     parse_and_launch_for_job(idx);
   }
 
-  // Do one GPU cycle if active
+  // 2) Do one GPU cycle if active
   if (m_gpgpu_sim->active()) {
     m_gpgpu_sim->cycle();
     sim_cycles_any_ = true;
@@ -794,6 +750,7 @@ void accel_sim_framework::step_one_cycle() {
           ->stop_all_running_kernels();
       stopped_due_to_limit_ = true;
 
+      // Mark all remaining jobs as finished due to limit
       for (auto &job : jobs_) {
         if (!job.done) {
           job.done = true;
@@ -804,7 +761,7 @@ void accel_sim_framework::step_one_cycle() {
     }
   }
 
-  // check for a finished kernel
+  // 3) Check for a finished kernel
   unsigned finished_kernel_uid = m_gpgpu_sim->finished_kernel();
   if (finished_kernel_uid) {
     cleanup_finished_kernel(finished_kernel_uid);

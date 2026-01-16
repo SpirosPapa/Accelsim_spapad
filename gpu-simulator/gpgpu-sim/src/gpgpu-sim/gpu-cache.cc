@@ -993,6 +993,34 @@ void cache_sub_stats::print_port_stats(FILE *fout,
   }
   fprintf(fout, "%s_fill_port_util = %.3f\n", cache_name, fill_port_util);
 }
+//MY ADDITION
+// auto print_port_utils = [&](const char *cache_name,
+//                             long long port_available_cycles,
+//                             long long data_port_busy_cycles,
+//                             long long fill_port_busy_cycles) {
+//   unsigned long long avail = (port_available_cycles > 0)
+//                                  ? (unsigned long long)port_available_cycles
+//                                  : 0ULL;
+//   unsigned long long data  = (data_port_busy_cycles > 0)
+//                                  ? (unsigned long long)data_port_busy_cycles
+//                                  : 0ULL;
+//   unsigned long long fill  = (fill_port_busy_cycles > 0)
+//                                  ? (unsigned long long)fill_port_busy_cycles
+//                                  : 0ULL;
+
+//   float data_util = 0.0f;
+//   float fill_util = 0.0f;
+//   if (avail > 0ULL) {
+//     data_util = (float)data / (float)avail;
+//     fill_util = (float)fill / (float)avail;
+//   }
+
+//   fprintf(fout, "%s_data_port_util = %.3f\n", cache_name, data_util);
+//   fprintf(fout, "%s_fill_port_util = %.3f\n", cache_name, fill_util);
+// };
+
+
+
 
 unsigned long long cache_stats::get_stats(
     enum mem_access_type *access_type, unsigned num_access_type,
@@ -1562,6 +1590,10 @@ enum cache_request_status data_cache::wr_miss_wa_naive(
       *ma, NULL, mf->get_streamID(), mf->get_ctrl_size(), mf->get_wid(),
       mf->get_sid(), mf->get_tpc(), mf->get_mem_config(),
       m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
+  if (mf && mf->has_kernel_uid()) {
+  n_mf->set_kernel_uid(mf->get_kernel_uid());
+  }
+
 
   bool do_miss = false;
   bool wb = false;
@@ -1692,6 +1724,10 @@ enum cache_request_status data_cache::wr_miss_wa_fetch_on_write(
         *ma, NULL, mf->get_streamID(), mf->get_ctrl_size(), mf->get_wid(),
         mf->get_sid(), mf->get_tpc(), mf->get_mem_config(),
         m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle, NULL, mf);
+    if (mf && mf->has_kernel_uid()) {
+      n_mf->set_kernel_uid(mf->get_kernel_uid());
+    }
+
 
     new_addr_type block_addr = m_config.block_addr(addr);
     bool do_miss = false;

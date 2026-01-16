@@ -32,6 +32,8 @@
 #include "../intersim2/interconnect_interface.hpp"
 #include "local_interconnect.h"
 
+
+icnt_peek_p icnt_peek;
 icnt_create_p icnt_create;
 icnt_init_p icnt_init;
 icnt_has_buffer_p icnt_has_buffer;
@@ -74,6 +76,11 @@ static void* intersim2_pop(unsigned output) {
   return g_icnt_interface->Pop(output);
 }
 
+static void* intersim2_peek(unsigned output) {
+  // requires InterconnectInterface::Peek 
+  return g_icnt_interface->Peek(output);
+}
+
 static void intersim2_transfer() { g_icnt_interface->Advance(); }
 
 static bool intersim2_busy() { return g_icnt_interface->Busy(); }
@@ -112,6 +119,11 @@ static void LocalInterconnect_push(unsigned input, unsigned output, void* data,
 
 static void* LocalInterconnect_pop(unsigned output) {
   return g_localicnt_interface->Pop(output);
+}
+
+static void* LocalInterconnect_peek(unsigned output) {
+  // requires LocalInterconnect::Peek 
+  return g_localicnt_interface->Peek(output);
 }
 
 static void LocalInterconnect_transfer() { g_localicnt_interface->Advance(); }
@@ -165,6 +177,7 @@ void icnt_wrapper_init() {
     case INTERSIM:
       // FIXME: delete the object: may add icnt_done wrapper
       g_icnt_interface = InterconnectInterface::New(g_network_config_filename);
+      icnt_peek = intersim2_peek;
       icnt_create = intersim2_create;
       icnt_init = intersim2_init;
       icnt_has_buffer = intersim2_has_buffer;
@@ -180,6 +193,7 @@ void icnt_wrapper_init() {
     case LOCAL_XBAR:
       g_localicnt_interface = LocalInterconnect::New(g_inct_config);
       icnt_create = LocalInterconnect_create;
+      icnt_peek = LocalInterconnect_peek;
       icnt_init = LocalInterconnect_init;
       icnt_has_buffer = LocalInterconnect_has_buffer;
       icnt_push = LocalInterconnect_push;

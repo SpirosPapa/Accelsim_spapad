@@ -70,7 +70,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
 		<!-- STATIC & CONSTANT Power -->
 
 		<param name="constant_power"    value="27.1" />        <!-- Constant board power -->
-		<param name="idle_core_power"   value="0.28279166"/>   <!-- Idle SM power (keep as-is) -->
+		<param name="idle_core_power"   value="0.28279166"/>   <!-- Idle SM power  -->
 
 		<!-- INT (ADD+MUL) -->
 		<param name="static_cat1_flane"    value="33.3"/>      <!-- from INT_STATIC div1 extra_blue -->
@@ -100,11 +100,11 @@ POSSIBILITY OF SUCH DAMAGE. -->
 		<param name="static_light_flane"   value="25.9"/>      <!-- LIGHT_SM div1 -->
 		<param name="static_light_addlane" value="0.00645"/>   <!-- (26.1 - 25.9) / 31 ≈ ~0 -->
 
-		<!-- INT ADD / MUL split so that cat1 = intadd + intmul -->
-		<param name="static_intadd_flane"    value="16.65"/>   <!-- 33.3 / 2 -->
+		<!-- INT ADD / MUL  -->
+		<param name="static_intadd_flane"    value="16.65"/>   <!-- ACT CORE 1 -->
 		<param name="static_intadd_addlane"  value="0.15565"/> <!-- 0.31129 / 2 -->
 
-		<param name="static_intmul_flane"    value="16.65"/>   <!-- 33.3 / 2 -->
+		<param name="static_intmul_flane"    value="16.65"/>   <!-- ACT CORE 2 -->
 		<param name="static_intmul_addlane"  value="0.15565"/> <!-- 0.31129 / 2 -->
 
 		<!-- Geomean over cat1–cat5 -->

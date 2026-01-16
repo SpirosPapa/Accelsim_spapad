@@ -55,6 +55,7 @@ public:
   virtual void Init();
   virtual void Push(unsigned input_deviceID, unsigned output_deviceID, void* data, unsigned int size);
   virtual void* Pop(unsigned ouput_deviceID);
+  virtual void* Peek(unsigned deviceID);   // NEW
   virtual void Advance();
   virtual bool Busy() const;
   virtual bool HasBuffer(unsigned deviceID, unsigned int size) const;
@@ -82,6 +83,7 @@ protected:
     inline unsigned Size(void) const { return _buffer.size(); }
     inline bool HasPacket() const { return _packet_n; }
     void* PopPacket();
+    void* PeekPacket() const;
     void* TopPacket() const;
     void PushFlitData(void* data,bool is_tail);
     

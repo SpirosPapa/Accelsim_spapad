@@ -18,11 +18,11 @@ partiton_level_parallism =       0.0031
 partiton_level_parallism_total  =       0.0031
 partiton_level_parallism_util =       1.0000
 partiton_level_parallism_util_total  =       1.0000
-L2_BW  =       0.1422 GB/Sec
-L2_BW_total  =       0.1422 GB/Sec
+L2_BW  =       0.0355 GB/Sec
+L2_BW_total  =       0.0355 GB/Sec
 L2_BW  calculated_by_classic=       0.1422 GB/Sec
 L2_BW_total  calculated_by_classic=       0.1422 GB/Sec
-gpu_total_sim_rate=761
+gpu_total_sim_rate=434
 
 ========= Core cache stats =========
 L1I_cache:

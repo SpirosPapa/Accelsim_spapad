@@ -1139,7 +1139,22 @@ struct cache_sub_stats {
 
   void print_port_stats(FILE *fout, const char *cache_name) const;
 };
+//MY ADDITION
+// struct port_snap_t {
+//   unsigned long long avail = 0;
+//   unsigned long long data  = 0;
+//   unsigned long long fill  = 0;
+// };
+// struct l1d_ports_rec_t {
+//   bool have_begin = false;
+//   bool have_end   = false;
+//   std::vector<port_snap_t> begin_per_cluster;
+//   std::vector<port_snap_t> end_per_cluster;
+//   std::vector<bool> allowed_sm; // cluster==SM when n_simt_cores_per_cluster==1
+// };
 
+// key: kernel_uid
+//std::unordered_map<unsigned, l1d_ports_rec_t> m_l1d_ports_rec;
 // Used for collecting AerialVision per-window statistics
 struct cache_sub_stats_pw {
   unsigned accesses;

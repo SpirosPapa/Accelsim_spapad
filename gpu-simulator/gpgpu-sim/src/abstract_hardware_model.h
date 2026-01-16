@@ -224,7 +224,13 @@ extern std::map<void *, void **> pinned_memory;
 extern std::map<void *, size_t> pinned_memory_size;
 
 class kernel_info_t {
+   unsigned m_job_id = 0;
+   bool     m_has_job_id = false;
  public:
+  // MY ADDITION
+  void set_job_id(unsigned jid) { m_job_id = jid; m_has_job_id = true; }
+  bool has_job_id() const { return m_has_job_id; }
+  unsigned get_job_id() const { return m_job_id; } 
   //   kernel_info_t()
   //   {
   //      m_valid=false;
@@ -233,6 +239,11 @@ class kernel_info_t {
   //      m_num_cores_running=0;
   //      m_param_mem=NULL;
   //   }
+  // NEW:
+  virtual unsigned long long get_cuda_stream_id() const { return m_streamID; }
+  virtual void set_cuda_stream_id(unsigned long long sid) { m_streamID = sid; }
+  
+  void set_streamID(unsigned long long sid) { m_streamID = sid; }
   kernel_info_t(dim3 gridDim, dim3 blockDim, class function_info *entry,
                 unsigned long long streamID);
   kernel_info_t(
@@ -1066,9 +1077,22 @@ const unsigned MAX_ACCESSES_PER_INSN_PER_THREAD = 8;
 
 class warp_inst_t : public inst_t {
  public:
+  //MY ADDITION
+  const kernel_info_t* get_kernel_info() const { return m_kernel_info; }
+  void set_kernel_info(const kernel_info_t* k) { m_kernel_info = k; }
+
+  // 
+  bool has_kernel_uid() const { return m_kernel_info != nullptr; }
+  unsigned get_kernel_uid() const { return m_kernel_info ? m_kernel_info->get_uid() : 0; }
+
+  // expose  job_id 
+  bool has_job_id() const { return m_kernel_info && m_kernel_info->has_job_id(); }
+  unsigned get_job_id() const { return m_kernel_info ? m_kernel_info->get_job_id() : 0; }
+  ///
   // constructors
   warp_inst_t() {
     m_uid = 0;
+    m_kernel_info = nullptr;
     m_streamID = (unsigned long long)-1;
     m_empty = true;
     m_config = NULL;
@@ -1082,6 +1106,7 @@ class warp_inst_t : public inst_t {
   }
   warp_inst_t(const core_config *config) {
     m_uid = 0;
+    m_kernel_info = nullptr;
     m_streamID = (unsigned long long)-1;
     assert(config->warp_size <= MAX_WARP_SIZE);
     m_config = config;
@@ -1107,7 +1132,7 @@ class warp_inst_t : public inst_t {
   void broadcast_barrier_reduction(const active_mask_t &access_mask);
   void do_atomic(bool forceDo = false);
   void do_atomic(const active_mask_t &access_mask, bool forceDo = false);
-  void clear() { m_empty = true; }
+  void clear() { m_empty = true; m_kernel_info = nullptr;}
 
   void issue(const active_mask_t &mask, unsigned warp_id,
              unsigned long long cycle, int dynamic_warp_id, int sch_id,
@@ -1244,6 +1269,7 @@ class warp_inst_t : public inst_t {
   active_mask_t get_warp_active_mask() const { return m_warp_active_mask; }
 
  protected:
+  const kernel_info_t* m_kernel_info = nullptr;   // non-owning
   unsigned m_uid;
   unsigned long long m_streamID;
   bool m_empty;

@@ -47,6 +47,10 @@ typedef void (*icnt_display_overall_stats_p)();
 typedef void (*icnt_display_state_p)(FILE* fp);
 typedef unsigned (*icnt_get_flit_size_p)();
 
+typedef void* (*icnt_peek_p)(unsigned output);
+
+extern icnt_peek_p icnt_peek;
+
 extern icnt_create_p icnt_create;
 extern icnt_init_p icnt_init;
 extern icnt_has_buffer_p icnt_has_buffer;

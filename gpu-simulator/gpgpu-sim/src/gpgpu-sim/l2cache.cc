@@ -71,6 +71,11 @@ mem_fetch *partition_mf_allocator::alloc(
   mem_fetch *mf = new mem_fetch(access, NULL, streamID,
                                 wr ? WRITE_PACKET_SIZE : READ_PACKET_SIZE, wid,
                                 sid, tpc, m_memory_config, cycle, original_mf);
+
+  if (original_mf && original_mf->has_kernel_uid()) {
+    mf->set_kernel_uid(original_mf->get_kernel_uid());
+  }
+
   return mf;
 }
 memory_partition_unit::memory_partition_unit(unsigned partition_id,

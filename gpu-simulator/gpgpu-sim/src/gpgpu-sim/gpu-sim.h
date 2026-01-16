@@ -34,9 +34,16 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <vector> 
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <map>
+#include <unordered_map>
+#include <cmath>
+#include <algorithm> 
+#include <limits>
+
 #include "../abstract_hardware_model.h"
 #include "../option_parser.h"
 #include "../trace.h"
@@ -209,21 +216,153 @@ struct power_config {
   double gpu_idle_core_power;
   double gpu_min_inc_per_active_sm;
 };
+// -----------------------------------------------------------------------------
+// Per-kernel statistics 
+// -----------------------------------------------------------------------------
+struct cache_cnt_t {
+  unsigned long long access = 0;
+  unsigned long long miss = 0;
+  unsigned long long pending_hit = 0;
+  unsigned long long resfail = 0;
+};
 
-//// test 
-// A lightweight view that can override the top timing numbers.
-struct kernel_stats_view_t {
-  long long gpu_sim_cycle              = -1;
-  long long gpu_sim_insn               = -1;
-  long long gpu_tot_sim_cycle          = -1;
-  long long gpu_tot_sim_insn           = -1;
-  long long gpu_tot_issued_cta         = -1;
+struct kernel_stats_accum_t {
+  // core execution
+  unsigned long long sim_cycle   = 0;
+  unsigned long long sim_insn    = 0;
+  unsigned long long issued_cta  = 0;
 
-  float     gpu_occupancy_percent      = -1.0f;
-  float     gpu_tot_occupancy_percent  = -1.0f;
+  // stalls
+  unsigned long long stall_dramfull = 0;
+  unsigned long long stall_icnt2sh  = 0;
+
+  // memory traffic
+  unsigned long long l2_reqs    = 0;
+  unsigned long long l2_bytes   = 0;
+  unsigned long long dram_reqs  = 0;
+  unsigned long long dram_bytes = 0;
+
+  cache_cnt_t l1i, l1d, l1c, l1t;
+
+  std::vector<cache_cnt_t> l1i_sm, l1d_sm, l1c_sm, l1t_sm;
+
+  // ---- per kernel shader stats counters ----
+  unsigned long long thrd_icount = 0;   //  gpgpu_n_tot_thrd_icount
+  unsigned long long warp_icount = 0;   //  gpgpu_n_tot_w_icount
+
+  unsigned long long n_load_insn  = 0;
+  unsigned long long n_store_insn = 0;
+
+  unsigned long long n_mem_read_local   = 0;
+  unsigned long long n_mem_write_local  = 0;
+  unsigned long long n_mem_read_global  = 0;
+  unsigned long long n_mem_write_global = 0;
+  unsigned long long n_mem_texture      = 0;
+  unsigned long long n_mem_const        = 0;
+
+  unsigned long long n_shmem_insn  = 0;
+  unsigned long long n_sstarr_insn = 0;
+  unsigned long long n_tex_insn    = 0;
+  unsigned long long n_const_insn  = 0;
+  unsigned long long n_param_insn  = 0;
+
+  std::vector<unsigned long long> shader_cycle_distro; 
+
+  // issue stats
+  std::vector<unsigned long long> single_issue_nums; 
+  std::vector<unsigned long long> dual_issue_nums;   
 
 };
 
+
+struct kernel_stats_view_t {
+  // "Unset" sentinels 
+  static constexpr long long kUnset  = -1;
+  static constexpr double   kUnsetD = -1.0;
+
+  long long gpu_sim_cycle = kUnset;
+  long long gpu_sim_insn  = kUnset;
+  double    gpu_ipc       = kUnsetD;
+
+  long long gpu_tot_sim_cycle  = kUnset;
+  long long gpu_tot_sim_insn   = kUnset;
+  double    gpu_tot_ipc        = kUnsetD;
+  long long gpu_tot_issued_cta = kUnset;
+
+  long long gpu_stall_dramfull = kUnset;
+  long long gpu_stall_icnt2sh  = kUnset;
+
+  double L2_BW       = kUnsetD;
+  double L2_BW_total = kUnsetD;
+
+  double gpu_occupancy_percent      = kUnsetD;
+  double gpu_tot_occupancy_percent  = kUnsetD;
+
+  double partiton_level_parallism            = kUnsetD;
+  double partiton_level_parallism_total      = kUnsetD;
+  double partiton_level_parallism_util       = kUnsetD;
+  double partiton_level_parallism_util_total = kUnsetD;
+
+  cache_cnt_t l1i{}, l1d{}, l1c{}, l1t{};
+  std::vector<cache_cnt_t> l1i_sm, l1d_sm, l1c_sm, l1t_sm;
+
+
+  long long l1d_port_available_cycles = kUnset;
+  long long l1d_data_port_busy_cycles = kUnset;
+  long long l1d_fill_port_busy_cycles = kUnset;
+
+  long long ctas_completed_for_kernel = kUnset;
+  int scheduler_sampling_core = -1;             
+  std::vector<unsigned> warp_slot_issue_distro; 
+
+  long long gpgpu_n_tot_thrd_icount = kUnset;
+  long long gpgpu_n_tot_w_icount    = kUnset;
+
+  long long gpgpu_n_load_insn  = kUnset;
+  long long gpgpu_n_store_insn = kUnset;
+
+  long long gpgpu_n_mem_read_local   = kUnset;
+  long long gpgpu_n_mem_write_local  = kUnset;
+  long long gpgpu_n_mem_read_global  = kUnset;
+  long long gpgpu_n_mem_write_global = kUnset;
+  long long gpgpu_n_mem_texture      = kUnset;
+  long long gpgpu_n_mem_const        = kUnset;
+
+  long long gpgpu_n_shmem_insn  = kUnset;
+  long long gpgpu_n_sstarr_insn = kUnset;
+  long long gpgpu_n_tex_insn    = kUnset;
+  long long gpgpu_n_const_mem_insn = kUnset;
+  long long gpgpu_n_param_mem_insn = kUnset;
+
+  std::vector<unsigned long long> shader_cycle_distro;
+  std::vector<unsigned long long> single_issue_nums;
+  std::vector<unsigned long long> dual_issue_nums;
+
+
+};
+
+
+// -----------------------------------------------------------------------------
+// Assumes cluster == SM when n_simt_cores_per_cluster == 1.
+// -----------------------------------------------------------------------------
+struct port_snap_t {
+  unsigned long long avail = 0;
+  unsigned long long data  = 0;
+  unsigned long long fill  = 0;
+};
+
+struct l1d_ports_rec_t {
+  bool have_begin = false;
+  bool have_end   = false;
+  std::vector<port_snap_t> begin_per_cluster;
+  std::vector<port_snap_t> end_per_cluster;
+  std::vector<bool> allowed_sm; // size=n_simt_clusters, true if kernel can run there
+};
+
+
+
+
+class gpgpu_sim;  //forward decl
 class memory_config {
  public:
   memory_config(gpgpu_context *ctx) {
@@ -232,6 +371,8 @@ class memory_config {
     gpgpu_L2_queue_config = NULL;
     gpgpu_ctx = ctx;
   }
+  void set_gpu(gpgpu_sim *gpu) { m_gpu = gpu; }
+  gpgpu_sim *get_gpu() const { return m_gpu; }
   void init() {
     assert(gpgpu_dram_timing_opt);
     if (strchr(gpgpu_dram_timing_opt, '=') == NULL) {
@@ -416,6 +557,8 @@ class memory_config {
   bool simple_dram_model;
   bool SST_mode;
   gpgpu_context *gpgpu_ctx;
+  private:
+      gpgpu_sim *m_gpu = nullptr;
 };
 
 extern bool g_interactive_debugger_enabled;
@@ -587,6 +730,8 @@ class watchpoint_event {
   const ptx_instruction *m_inst;
 };
 
+class warp_inst_t; // forward decl
+
 class gpgpu_sim : public gpgpu_t {
  public:
   gpgpu_sim(const gpgpu_sim_config &config, gpgpu_context *ctx);
@@ -605,6 +750,61 @@ class gpgpu_sim : public gpgpu_t {
   unsigned finished_kernel();
   void set_kernel_done(kernel_info_t *kernel);
   void stop_all_running_kernels();
+
+
+    // --- Per-kernel / per-job accounting helpers (NEW) --------------------
+  // These are implemented in gpu-sim.cc and are used by the daemon / driver
+  // code to keep proper per-kernel stats even under concurrency.
+  void note_kernel_launch(kernel_info_t *kinfo);
+  void note_kernel_completion(kernel_info_t *kinfo);
+
+  // Build a stats view for a specific kernel UID from the internal
+  // per-kernel maps (kernel_inst_count, kernel_mem_reply_bytes, etc.).
+  kernel_stats_view_t make_kernel_stats_view(unsigned kernel_uid) const;
+
+  // Clear all per-kernel bookkeeping for a given kernel UID once we have
+  // printed its stats.
+  void clear_kernel_stats(unsigned kernel_uid);
+
+
+  enum class l1_kind_t { L1I, L1D, L1C, L1T };
+
+  void record_kernel_l1_access(unsigned kernel_uid,
+                              unsigned smid,
+                              l1_kind_t kind,
+                              cache_request_status status);
+
+
+    // Event recorders (must be called at event sites: shader/L2/DRAM/ICNT)
+  void record_kernel_cycle(unsigned kernel_uid, unsigned long long ncycles = 1);
+  void record_kernel_inst(unsigned kernel_uid, unsigned long long ninst = 1);
+  void record_kernel_issued_cta(unsigned kernel_uid, unsigned long long ncta = 1);
+
+  void record_kernel_stall_dramfull(unsigned kernel_uid,
+                                    unsigned long long ncycles = 1);
+  void record_kernel_stall_icnt2sh(unsigned kernel_uid,
+                                   unsigned long long ncycles = 1);
+
+  void record_kernel_l2_request(unsigned kernel_uid, unsigned long long nreq = 1);
+  void record_kernel_l2_bytes(unsigned kernel_uid, unsigned long long nbytes);
+  void record_kernel_dram_request(unsigned kernel_uid, unsigned long long nreq = 1);
+  void record_kernel_dram_bytes(unsigned kernel_uid, unsigned long long nbytes);
+  inline void record_kernel_l1d(unsigned kernel_uid, unsigned smid, cache_request_status s) {
+    record_kernel_l1_access(kernel_uid, smid, l1_kind_t::L1D, s);
+  }
+  inline void record_kernel_l1i(unsigned kernel_uid, unsigned smid, cache_request_status s) {
+    record_kernel_l1_access(kernel_uid, smid, l1_kind_t::L1I, s);
+  }
+  inline void record_kernel_l1c(unsigned kernel_uid, unsigned smid, cache_request_status s) {
+    record_kernel_l1_access(kernel_uid, smid, l1_kind_t::L1C, s);
+  }
+  inline void record_kernel_l1t(unsigned kernel_uid, unsigned smid, cache_request_status s) {
+    record_kernel_l1_access(kernel_uid, smid, l1_kind_t::L1T, s);
+  }
+
+
+  void shader_print_scheduler_stat(FILE *fout,bool print_dynamic_info,const kernel_stats_view_t *view) const;
+
 
   void init();
   void cycle();
@@ -658,8 +858,11 @@ class gpgpu_sim : public gpgpu_t {
   void decrement_kernel_latency();
 
   const gpgpu_sim_config &get_config() const { return m_config; }
-  void gpu_print_stat(unsigned long long streamID,const kernel_stats_view_t *view,const char *single_kernel_name,int single_kernel_uid);  void dump_pipeline(int mask, int s, int m) const;
-
+  void gpu_print_stat(unsigned long long streamID,
+                      const kernel_stats_view_t *view,
+                      const char *single_kernel_name,
+                      int single_kernel_uid);
+  void dump_pipeline(int mask, int s, int m) const;
   void perf_memcpy_to_gpu(size_t dst_start_addr, size_t count);
 
   // The next three functions added to be used by the functional simulation
@@ -709,6 +912,7 @@ class gpgpu_sim : public gpgpu_t {
   void shader_print_runtime_stat(FILE *fout);
   void shader_print_l1_miss_stat(FILE *fout) const;
   void shader_print_cache_stats(FILE *fout) const;
+  void shader_print_cache_stats(FILE *fout, const kernel_stats_view_t *view) const;
   void shader_print_scheduler_stat(FILE *fout, bool print_dynamic_info) const;
   void visualizer_printstat();
   void print_shader_cycle_distro(FILE *fout) const;
@@ -772,6 +976,7 @@ class gpgpu_sim : public gpgpu_t {
   std::string executed_kernel_name();
   void clear_executed_kernel_info();  //< clear the kernel information after
                                       // stat printout
+  void snapshot_l1d_ports_per_cluster(std::vector<port_snap_t>& out) const;
   virtual void createSIMTCluster() = 0;
 
  public:
@@ -794,6 +999,7 @@ class gpgpu_sim : public gpgpu_t {
   cache_stats aggregated_l2_stats;
 
   // performance counter for stalls due to congestion.
+  // performance counter for stalls due to congestion.
   unsigned int gpu_stall_dramfull;
   unsigned int gpu_stall_icnt2sh;
   unsigned long long partiton_reqs_in_parallel;
@@ -804,18 +1010,75 @@ class gpgpu_sim : public gpgpu_t {
   unsigned long long gpu_tot_sim_cycle_parition_util;
   unsigned long long partiton_replys_in_parallel;
   unsigned long long partiton_replys_in_parallel_total;
+  // --- Per-kernel / per-job statistics (keyed by kernel launch UID) ---
+
+  // Total instructions executed that we attribute to this kernel.
+  // (Will be used for per-kernel gpu_sim_insn / gpu_tot_sim_insn if we
+  //  decide not to rely only on the external view struct.)
+  std::map<unsigned, unsigned long long> kernel_inst_count;
+
+  // Per-kernel memory / L2 bandwidth stats.
+  // We will increment these when L2 sends replies for mem_fetch objects
+  // belonging to a given kernel (via mem_fetch->get_kernel()->get_uid()).
+  //
+  //   kernel_mem_reply_bytes[k]        : total bytes returned to SMs
+  //   kernel_mem_concurrency_sum[k]    : sum over cycles of concurrent replies
+  //   kernel_mem_busy_cycles[k]        : #cycles where this kernel saw >=1 reply
+  std::map<unsigned, unsigned long long> kernel_mem_reply_bytes;
+  std::map<unsigned, unsigned long long> kernel_mem_concurrency_sum;
+  std::map<unsigned, unsigned long long> kernel_mem_busy_cycles;
+
+  // Per-kernel launch geometry / CTAs.
+  // We will fill these when the kernel is launched.
+  std::map<unsigned, unsigned> kernel_cta_count;        // total CTAs of the kernel
+  std::map<unsigned, unsigned> kernel_threads_per_cta;  // threads per CTA
+
+  // Per-kernel congestion-related stalls (optional, but useful for per-job view).
+  std::map<unsigned, unsigned> kernel_stall_dramfull;   // DRAM-full stalls per kernel
+  std::map<unsigned, unsigned> kernel_stall_icnt2sh;    // interconnect-to-shader stalls per kernel
+
+  // Map global streamID -> current kernel UID running on that stream.
+  // This lets us attribute some events (like stalls) to "the kernel that owns
+  // this stream" when we only have a streamID handy.
+  std::map<unsigned long long, unsigned> stream_to_kernel_map;
+
 
   FuncCache get_cache_config(std::string kernel_name);
   void set_cache_config(std::string kernel_name, FuncCache cacheConfig);
   bool has_special_cache_config(std::string kernel_name);
   void change_cache_config(FuncCache cache_config);
   void set_cache_config(std::string kernel_name);
+  int pick_sampling_core_for_kernel_(const kernel_info_t *k) const;
+  void record_kernel_warp_issue(unsigned smid, unsigned warp_id,unsigned sch_id,unsigned active_count,unsigned long long streamID,const warp_inst_t *inst);
 
   // Jin: functional simulation for CDP
  protected:
+ //MY ADDITION
+ port_snap_t snap_l1d_ports_for_cluster_(unsigned cluster_id) const;
   // set by stream operation every time a functoinal simulation is done
   bool m_functional_sim;
   kernel_info_t *m_functional_sim_kernel;
+
+  // -------------------------------------------------------------------------
+  // Concurrency-safe per-kernel accumulators (keyed by kernel launch UID)
+  // -------------------------------------------------------------------------
+  kernel_stats_accum_t &kernel_stats_mut_(unsigned kernel_uid);
+  const kernel_stats_accum_t *kernel_stats_find_(unsigned kernel_uid) const;
+
+  std::unordered_map<unsigned, kernel_stats_accum_t> m_kernel_stats_;
+  std::unordered_map<unsigned, l1d_ports_rec_t> m_l1d_ports_rec;
+
+  // -------------------------------------------------------------------------
+  // Per-kernel scheduler issue distro recorder 
+  // -------------------------------------------------------------------------
+  struct sched_issue_rec_t {
+    int sampling_core = -1;              // which SM we count on
+    std::vector<unsigned> distro;        // distro[warp_id]++
+  };
+
+  std::unordered_map<unsigned, sched_issue_rec_t> m_sched_issue_rec_;
+
+
 
  public:
   bool is_functional_sim() { return m_functional_sim; }
@@ -919,8 +1182,6 @@ class sst_gpgpu_sim : public gpgpu_sim {
    */
   void SST_gpgpusim_numcores_equal_check(unsigned sst_numcores);
 };
-
-
 
 
 

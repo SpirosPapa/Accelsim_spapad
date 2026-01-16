@@ -219,6 +219,25 @@ class shd_warp_t {
     m_ibuffer[slot].m_valid = true;
     m_next = 0;
   }
+  //MY ADDITION
+  // void ibuffer_fill(unsigned slot, const warp_inst_t *pI) {
+  //   assert(slot < IBUFFER_SIZE);
+
+  //   // Stamp the instruction with the current kernel before entering ibuffer
+  //   if (pI) {
+  //     kernel_info_t *k = get_kernel_info();   // <-- THIS is the correct source
+  //     if (k) {
+  //       const_cast<warp_inst_t *>(pI)->set_kernel_info(k);
+  //       // or: set_kernel_uid(k->get_uid()); if you prefer uid-only
+  //     }
+  //   }
+
+  //   m_ibuffer[slot].m_inst = pI;
+  //   m_ibuffer[slot].m_valid = true;
+  //   m_next = 0;
+  // }
+
+
   bool ibuffer_empty() const {
     for (unsigned i = 0; i < IBUFFER_SIZE; i++)
       if (m_ibuffer[i].m_valid) return false;
@@ -348,6 +367,7 @@ unsigned register_bank(int regnum, int wid, unsigned num_banks,
 
 class shader_core_ctx;
 class shader_core_config;
+struct kernel_stats_view_t;
 class shader_core_stats;
 
 enum scheduler_prioritization_type {
@@ -1473,6 +1493,8 @@ class ldst_unit : public pipelined_simd_unit {
 
   std::vector<std::deque<mem_fetch *>> l1_latency_queue;
   void L1_latency_queue_cycle();
+  private:
+    void tag_mf_kernel(mem_fetch *mf, unsigned warp_id);
 };
 
 enum pipeline_stage_name_t {
@@ -1928,6 +1950,8 @@ class shader_core_stats : public shader_core_stats_pod {
     m_shader_dynamic_warp_issue_distro.resize(config->num_shader());
     m_shader_warp_slot_issue_distro.resize(config->num_shader());
   }
+  //MY ADDITION
+  void inc_warp_slot_issue(unsigned sid, unsigned warp_id);
 
   ~shader_core_stats() {
     delete m_outgoing_traffic_stats;
@@ -1989,6 +2013,7 @@ class shader_core_stats : public shader_core_stats_pod {
   void visualizer_print(gzFile visualizer_file);
 
   void print(FILE *fout) const;
+  void print(FILE *fout, const kernel_stats_view_t *view) const; // MY ADDITION
 
   const std::vector<std::vector<unsigned>> &get_dynamic_warp_issue() const {
     return m_shader_dynamic_warp_issue_distro;
@@ -1997,7 +2022,6 @@ class shader_core_stats : public shader_core_stats_pod {
   const std::vector<std::vector<unsigned>> &get_warp_slot_issue() const {
     return m_shader_warp_slot_issue_distro;
   }
-
  private:
   const shader_core_config *m_config;
 
@@ -2063,6 +2087,8 @@ class shader_core_ctx : public core_t {
                   const shader_core_config *config,
                   const memory_config *mem_config, shader_core_stats *stats);
 
+  //MY ADDITION
+  unsigned get_warp_kernel_uid(unsigned warp_id) const;
   // used by simt_core_cluster:
   // modifiers
   void cycle();

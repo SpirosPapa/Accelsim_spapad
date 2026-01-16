@@ -96,6 +96,13 @@ void* xbar_router::Pop(unsigned ouput_deviceID) {
   return data;
 }
 
+void* xbar_router::Peek(unsigned ouput_deviceID) const {
+  assert(ouput_deviceID < total_nodes);
+  if (out_buffers[ouput_deviceID].empty()) return NULL;
+  return out_buffers[ouput_deviceID].front().data;
+}
+
+
 bool xbar_router::Has_Buffer_In(unsigned input_deviceID, unsigned size,
                                 bool update_counter) {
   assert(input_deviceID < total_nodes);
@@ -354,6 +361,14 @@ void* LocalInterconnect::Pop(unsigned ouput_deviceID) {
 
   return net[subnet]->Pop(ouput_deviceID);
 }
+void* LocalInterconnect::Peek(unsigned ouput_deviceID) const {
+  // 0-(n_shader-1) indicates reply(network 1), otherwise request(network 0)
+  int subnet = 0;
+  if (ouput_deviceID < n_shader) subnet = 1;
+
+  return net[subnet]->Peek(ouput_deviceID);
+}
+
 
 void LocalInterconnect::Advance() {
   for (unsigned i = 0; i < n_subnets; ++i) {

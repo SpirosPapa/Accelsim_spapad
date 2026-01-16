@@ -226,6 +226,28 @@ void* InterconnectInterface::Pop(unsigned deviceID)
   return data;
 
 }
+void* InterconnectInterface::Peek(unsigned deviceID)
+{
+  int icntID = _node_map[deviceID];
+  void* data = NULL;
+
+  // 0-_n_shader-1 indicates reply(network 1), otherwise request(network 0)
+  int subnet = 0;
+  if (deviceID < _n_shader) subnet = 1;
+
+  int turn = _round_robin_turn[subnet][icntID];
+
+  for (int vc = 0; (vc < _vcs) && (data == NULL); vc++) {
+    if (_boundary_buffer[subnet][icntID][turn].HasPacket()) {
+      data = _boundary_buffer[subnet][icntID][turn].PeekPacket();
+    }
+    turn++;
+    if (turn == _vcs) turn = 0;
+  }
+
+  return data;
+}
+
 
 void InterconnectInterface::Advance()
 {
@@ -520,6 +542,14 @@ void* InterconnectInterface::_BoundaryBufferItem::PopPacket()
   }
   return data;
 }
+void* InterconnectInterface::_BoundaryBufferItem::PeekPacket() const
+{
+  if (_packet_n == 0) return NULL;
+  assert(!_buffer.empty());
+  // all flits of a packet store the same pointer, so front() identifies the packet
+  return _buffer.front();
+}
+
 
 void* InterconnectInterface::_BoundaryBufferItem::TopPacket() const
 {

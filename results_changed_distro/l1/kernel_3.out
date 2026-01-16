@@ -1,9 +1,9 @@
 kernel_name = _Z6l1_latPjS_PmS0_
-kernel_launch_uid = 1
-kernel_stream_id = 1
+kernel_launch_uid = 3
+kernel_stream_id = 3
 gpu_sim_cycle = 1328748
 gpu_sim_insn = 66978
-gpu_sim_insn calculated by classic = 66978
+gpu_sim_insn calculated by classic = 200934
 gpu_ipc =       0.0504
 gpu_tot_sim_cycle = 1328748
 gpu_tot_sim_insn = 66978
@@ -14,24 +14,24 @@ gpu_tot_occupancy = 1.5625%
 max_total_param_size = 0
 gpu_stall_dramfull = 0
 gpu_stall_icnt2sh    = 0
-partiton_level_parallism =       0.0031
-partiton_level_parallism_total  =       0.0031
+partiton_level_parallism =       0.0093
+partiton_level_parallism_total  =       0.0093
 partiton_level_parallism_util =       1.0000
 partiton_level_parallism_util_total  =       1.0000
 L2_BW  =       0.1422 GB/Sec
 L2_BW_total  =       0.1422 GB/Sec
-L2_BW  calculated_by_classic=       0.1422 GB/Sec
-L2_BW_total  calculated_by_classic=       0.1422 GB/Sec
-gpu_total_sim_rate=761
+L2_BW  calculated_by_classic=       0.4265 GB/Sec
+L2_BW_total  calculated_by_classic=       0.4265 GB/Sec
+gpu_total_sim_rate=791
 
 ========= Core cache stats =========
 L1I_cache:
-	L1I_total_cache_accesses = 0
-	L1I_total_cache_misses = 0
-	L1I_total_cache_pending_hits = 0
-	L1I_total_cache_reservation_fails = 0
+	L1I_cache_total_cache_accesses = 0
+	L1I_cache_total_cache_misses = 0
+	L1I_cache_total_cache_pending_hits = 0
+	L1I_cache_total_cache_reservation_fails = 0
 L1D_cache:
-	L1D_cache_core[0]: Access = 36868, Miss = 1027, Miss_rate = 0.028, Pending_hits = 0, Reservation_fails = 0
+	L1D_cache_core[0]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[1]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[2]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[3]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
@@ -45,7 +45,7 @@ L1D_cache:
 	L1D_cache_core[11]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[12]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[13]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
-	L1D_cache_core[14]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
+	L1D_cache_core[14]: Access = 36868, Miss = 1027, Miss_rate = 0.028, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[15]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[16]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
 	L1D_cache_core[17]: Access = 0, Miss = 0, Miss_rate = -nan, Pending_hits = 0, Reservation_fails = 0
@@ -92,23 +92,91 @@ L1D_cache:
 	L1D_total_cache_miss_rate = 0.0279
 	L1D_total_cache_pending_hits = 0
 	L1D_total_cache_reservation_fails = 0
-	L1D_cache_data_port_util = 0.027
+	L1D_cache_data_port_util = 0.000
 	L1D_cache_fill_port_util = 0.000
 L1C_cache:
-	L1C_total_cache_accesses = 0
-	L1C_total_cache_misses = 0
-	L1C_total_cache_pending_hits = 0
-	L1C_total_cache_reservation_fails = 0
+	L1C_cache_total_cache_accesses = 0
+	L1C_cache_total_cache_misses = 0
+	L1C_cache_total_cache_pending_hits = 0
+	L1C_cache_total_cache_reservation_fails = 0
 L1T_cache:
-	L1T_total_cache_accesses = 0
-	L1T_total_cache_misses = 0
-	L1T_total_cache_pending_hits = 0
-	L1T_total_cache_reservation_fails = 0
+	L1T_cache_total_cache_accesses = 0
+	L1T_cache_total_cache_misses = 0
+	L1T_cache_total_cache_pending_hits = 0
+	L1T_cache_total_cache_reservation_fails = 0
 
 Total_core_cache_stats:
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][HIT] = 32769
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[CONST_ACC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[TEXTURE_ACC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][HIT] = 3072
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][MISS] = 259
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][SECTOR_MISS] = 768
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][HIT] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][MISS] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[LOCAL_ACC_W][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][HIT] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][MISS] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[L1_WRBK_ACC][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][HIT] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][MISS] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[L2_WRBK_ACC][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[INST_ACC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[L1_WR_ALLOC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][HIT] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][HIT_RESERVED] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][MISS] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][RESERVATION_FAIL] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][SECTOR_MISS] = 0
+	Total_core_cache_stats_breakdown[L2_WR_ALLOC_R][MSHR_HIT] = 0
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_R][TOTAL_ACCESS] = 32769
+	Total_core_cache_stats_breakdown[GLOBAL_ACC_W][TOTAL_ACCESS] = 4099
 
 Total_core_cache_fail_stats:
-ctas_completed 1, Shader 0 warp_id issue ditsribution:
+ctas_completed 1, Shader 14 warp_id issue ditsribution:
 warp_id:
 0, 
 distro:
@@ -118,7 +186,7 @@ gpgpu_n_tot_w_icount = 66985
 gpgpu_n_stall_shd_mem = 0
 gpgpu_n_mem_read_local = 0
 gpgpu_n_mem_write_local = 0
-gpgpu_n_mem_read_global = 0
+gpgpu_n_mem_read_global = 32769
 gpgpu_n_mem_write_global = 4099
 gpgpu_n_mem_texture = 0
 gpgpu_n_mem_const = 0
@@ -140,11 +208,9 @@ gpgpu_stall_shd_mem[gl_mem][coal_stall] = 0
 gpgpu_stall_shd_mem[gl_mem][data_port_stall] = 0
 gpu_reg_bank_conflict_stalls = 0
 Warp Occupancy Distribution:
-Stall:7	W0_Idle:3958018	W0_Scoreboard:1252037	W1:66978	W2:0	W3:0	W4:0	W5:0	W6:0	W7:0	W8:0	W9:0	W10:0	W11:0	W12:0	W13:0	W14:0	W15:0	W16:0	W17:0	W18:0	W19:0	W20:0	W21:0	W22:0	W23:0	W24:0	W25:0	W26:0	W27:0	W28:0	W29:0	W30:0	W31:0	W32:0
+Stall:7	W0_Idle:0	W0_Scoreboard:0	W1:66978	W2:0	W3:0	W4:0	W5:0	W6:0	W7:0	W8:0	W9:0	W10:0	W11:0	W12:0	W13:0	W14:0	W15:0	W16:0	W17:0	W18:0	W19:0	W20:0	W21:0	W22:0	W23:0	W24:0	W25:0	W26:0	W27:0	W28:0	W29:0	W30:0	W31:0	W32:0
 single_issue_nums: WS0:66985	WS1:0	WS2:0	WS3:0	
 dual_issue_nums: WS0:0	WS1:0	WS2:0	WS3:0	
-traffic_breakdown_coretomem[GLOBAL_ACC_W] = 163960 {40:4099,}
-traffic_breakdown_memtocore[GLOBAL_ACC_W] = 32792 {8:4099,}
 maxmflatency = 234 
 max_icnt2mem_latency = 38 
 maxmrqlatency = 0 
@@ -154,10 +220,10 @@ avg_icnt2mem_latency = 38
 avg_icnt2sh_latency = 2 
 mrq_lat_table:0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
 dq_lat_table:0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
-mf_lat_table:0 	0 	0 	0 	0 	0 	0 	4099 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
-icnt2mem_lat_table:0 	0 	0 	0 	0 	4099 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
-icnt2sh_lat_table:0 	4099 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
-mf_lat_pw_table:0 	0 	0 	0 	0 	0 	0 	83 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
+mf_lat_table:0 	0 	0 	0 	0 	0 	0 	12297 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
+icnt2mem_lat_table:0 	0 	0 	0 	0 	12297 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
+icnt2sh_lat_table:0 	12297 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
+mf_lat_pw_table:0 	0 	0 	0 	0 	0 	0 	251 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	0 	
 maximum concurrent accesses to same row:
 dram[0]:         0         0         0         0         0         0         0         0         0         0         0         0         0         0         0         0 
 dram[1]:         0         0         0         0         0         0         0         0         0         0         0         0         0         0         0         0 
@@ -377,9 +443,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[0]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -394,11 +460,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -412,8 +478,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -447,9 +513,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[1]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -464,11 +530,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -482,8 +548,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -517,9 +583,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[2]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -534,11 +600,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -552,8 +618,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -587,9 +653,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[3]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -604,11 +670,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -622,8 +688,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -657,9 +723,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[4]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -674,11 +740,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -692,8 +758,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -727,9 +793,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[5]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -744,11 +810,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -762,8 +828,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -797,9 +863,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[6]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -814,11 +880,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -832,8 +898,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -867,9 +933,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[7]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -884,11 +950,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -902,8 +968,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -937,9 +1003,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[8]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -954,11 +1020,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -972,8 +1038,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1007,9 +1073,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[9]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1024,11 +1090,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1042,8 +1108,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1077,9 +1143,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[10]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1094,11 +1160,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1112,8 +1178,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1147,9 +1213,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[11]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1164,11 +1230,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1182,8 +1248,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1217,9 +1283,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[12]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1234,11 +1300,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1252,8 +1318,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1287,9 +1353,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[13]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1304,11 +1370,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1322,8 +1388,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1357,9 +1423,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[14]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1374,11 +1440,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1392,8 +1458,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1427,9 +1493,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[15]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1444,11 +1510,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1462,8 +1528,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1497,9 +1563,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[16]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1514,11 +1580,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1532,8 +1598,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1567,9 +1633,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[17]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1584,11 +1650,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1602,8 +1668,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1637,9 +1703,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[18]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1654,11 +1720,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1672,8 +1738,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1707,9 +1773,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[19]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1724,11 +1790,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1742,8 +1808,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1777,9 +1843,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[20]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1794,11 +1860,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1812,8 +1878,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1847,9 +1913,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[21]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1864,11 +1930,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1882,8 +1948,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1917,9 +1983,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[22]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -1934,11 +2000,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -1952,8 +2018,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -1987,9 +2053,9 @@ MSHR contents
 
 In Dram Latency Queue (total = 0): 
 DRAM[23]: 16 bks, busW=16 BL=2 CL=19, tRRD=5 tCCD=1, tRCD=17 tRAS=45 tRP=19 tRC=64
-n_cmd=1121132 n_nop=1121132 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
+n_cmd=3363396 n_nop=3363396 n_act=0 n_pre=0 n_ref_event=0 n_req=0 n_rd=0 n_rd_L2_A=0 n_write=0 n_wr_bk=0 bw_util=0
 n_activity=0 dram_eff=-nan
-bk0: 0a 1121132i bk1: 0a 1121132i bk2: 0a 1121132i bk3: 0a 1121132i bk4: 0a 1121132i bk5: 0a 1121132i bk6: 0a 1121132i bk7: 0a 1121132i bk8: 0a 1121132i bk9: 0a 1121132i bk10: 0a 1121132i bk11: 0a 1121132i bk12: 0a 1121132i bk13: 0a 1121132i bk14: 0a 1121132i bk15: 0a 1121132i 
+bk0: 0a 3363396i bk1: 0a 3363396i bk2: 0a 3363396i bk3: 0a 3363396i bk4: 0a 3363396i bk5: 0a 3363396i bk6: 0a 3363396i bk7: 0a 3363396i bk8: 0a 3363396i bk9: 0a 3363396i bk10: 0a 3363396i bk11: 0a 3363396i bk12: 0a 3363396i bk13: 0a 3363396i bk14: 0a 3363396i bk15: 0a 3363396i 
 
 ------------------------------------------------------------------------
 
@@ -2004,11 +2070,11 @@ GrpLevelPara = -nan
 
 BW Util details:
 bwutil = 0.000000 
-total_CMD = 1121132 
+total_CMD = 3363396 
 util_bw = 0 
 Wasted_Col = 0 
 Wasted_Row = 0 
-Idle = 1121132 
+Idle = 3363396 
 
 BW Util Bottlenecks: 
 RCDc_limit = 0 
@@ -2022,8 +2088,8 @@ WTRc_limit_alone = 0
 RTWc_limit_alone = 0 
 
 Commands details: 
-total_CMD = 1121132 
-n_nop = 1121132 
+total_CMD = 3363396 
+n_nop = 3363396 
 Read = 0 
 Write = 0 
 L2_Alloc = 0 
@@ -2050,71 +2116,138 @@ dram_eff_bins: 0 0 0 0 0 0 0 0 0 0
 mrqq: max=0 avg=0
 
 ========= L2 cache stats =========
-L2_cache_bank[0]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[1]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[2]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[3]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[4]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[5]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[6]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[7]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[8]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[9]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[10]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[11]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[12]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[13]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[14]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[15]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[16]: Access = 81, Miss = 21, Miss_rate = 0.259, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[17]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[18]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[19]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[20]: Access = 81, Miss = 21, Miss_rate = 0.259, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[21]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[22]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[23]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[24]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[25]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[26]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[27]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[28]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[29]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[30]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[31]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[32]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[33]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[34]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[35]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[36]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[37]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[38]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[39]: Access = 96, Miss = 24, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[40]: Access = 81, Miss = 21, Miss_rate = 0.259, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[41]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[42]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[43]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[44]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[45]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[46]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_cache_bank[47]: Access = 80, Miss = 20, Miss_rate = 0.250, Pending_hits = 0, Reservation_fails = 0
-L2_total_cache_accesses = 4099
+L2_cache_bank[0]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[1]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[2]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[3]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[4]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[5]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[6]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[7]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[8]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[9]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[10]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[11]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[12]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[13]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[14]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[15]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[16]: Access = 243, Miss = 21, Miss_rate = 0.086, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[17]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[18]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[19]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[20]: Access = 243, Miss = 21, Miss_rate = 0.086, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[21]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[22]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[23]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[24]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[25]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[26]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[27]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[28]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[29]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[30]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[31]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[32]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[33]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[34]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[35]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[36]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[37]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[38]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[39]: Access = 288, Miss = 24, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[40]: Access = 243, Miss = 21, Miss_rate = 0.086, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[41]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[42]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[43]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[44]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[45]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[46]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_cache_bank[47]: Access = 240, Miss = 20, Miss_rate = 0.083, Pending_hits = 0, Reservation_fails = 0
+L2_total_cache_accesses = 12297
 L2_total_cache_misses = 1027
-L2_total_cache_miss_rate = 0.2505
+L2_total_cache_miss_rate = 0.0835
 L2_total_cache_pending_hits = 0
 L2_total_cache_reservation_fails = 0
 L2_total_cache_breakdown:
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][MISS] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][HIT] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][MISS] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][HIT] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][MISS] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[CONST_ACC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][HIT] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][MISS] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[TEXTURE_ACC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][HIT] = 4099
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][MISS] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][HIT] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][MISS] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[LOCAL_ACC_W][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][HIT] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][MISS] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[L1_WRBK_ACC][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][HIT] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][MISS] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[L2_WRBK_ACC][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][HIT] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][MISS] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[INST_ACC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][HIT] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][MISS] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[L1_WR_ALLOC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][HIT] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][HIT_RESERVED] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][MISS] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][RESERVATION_FAIL] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][SECTOR_MISS] = 0
+	L2_cache_stats_breakdown[L2_WR_ALLOC_R][MSHR_HIT] = 0
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][TOTAL_ACCESS] = 4099
 L2_total_cache_reservation_fail_breakdown:
 L2_cache_data_port_util = 0.000
 L2_cache_fill_port_util = 0.000
 
-icnt_total_pkts_mem_to_simt=4099
-icnt_total_pkts_simt_to_mem=4099
+icnt_total_pkts_mem_to_simt=12297
+icnt_total_pkts_simt_to_mem=12297
 LD_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ST_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ----------------------------Interconnect-DETAILS------------------------------
-Req_Network_injected_packets_num = 4099
-Req_Network_cycles = 1328749
+Req_Network_injected_packets_num = 12297
+Req_Network_cycles = 3986247
 Req_Network_injected_packets_per_cycle =       0.0031 
 Req_Network_conflicts_per_cycle =       0.0000
 Req_Network_conflicts_per_cycle_util =       0.0000
@@ -2124,8 +2257,8 @@ Req_Network_in_buffer_avg_util =       0.0000
 Req_Network_out_buffer_full_per_cycle =       0.0000
 Req_Network_out_buffer_avg_util =       0.0001
 
-Reply_Network_injected_packets_num = 4099
-Reply_Network_cycles = 1328749
+Reply_Network_injected_packets_num = 12297
+Reply_Network_cycles = 3986247
 Reply_Network_injected_packets_per_cycle =        0.0031
 Reply_Network_conflicts_per_cycle =        0.0000
 Reply_Network_conflicts_per_cycle_util =       0.0000
