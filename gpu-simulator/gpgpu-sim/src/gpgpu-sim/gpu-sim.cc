@@ -31,7 +31,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "gpu-sim.h"
-
+#include "shader.h"
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
@@ -855,25 +855,30 @@ void gpgpu_sim::record_kernel_dram_bytes(unsigned kernel_uid, unsigned long long
 using l1_kind_t = gpgpu_sim::l1_kind_t;
 
 static inline void bump_cache_cnt(cache_cnt_t &c, cache_request_status st) {
-  // Count every request attempt as an access
-  c.access++;
-
   switch (st) {
-    case HIT:
-      break;
-    case MISS:
-    case SECTOR_MISS:
-      c.miss++;
-      break;
-    case HIT_RESERVED:
-    case MSHR_HIT:
-      c.pending_hit++;
-      break;
     case RESERVATION_FAIL:
       c.resfail++;
-      break;
+      return; 
+
+    case HIT:
+      c.access++;
+      return;
+
+    case MISS:
+    case SECTOR_MISS:
+      c.access++;
+      c.miss++;
+      return;
+
+    case HIT_RESERVED:
+    case MSHR_HIT:
+      c.access++;
+      c.pending_hit++;
+      return;
+
     default:
-      break;
+      c.access++; // safest fallback
+      return;
   }
 }
 
@@ -925,7 +930,7 @@ kernel_stats_view_t gpgpu_sim::make_kernel_stats_view(unsigned kernel_uid) const
   kernel_stats_view_t v{};
   const kernel_stats_accum_t *a = kernel_stats_find_(kernel_uid);
   if (!a) return v;
-
+  
   v.gpu_sim_cycle = a->sim_cycle;
   v.gpu_sim_insn  = a->sim_insn;
   v.gpu_ipc       = (a->sim_cycle ? (double)a->sim_insn / (double)a->sim_cycle : 0.0);
@@ -1019,7 +1024,129 @@ kernel_stats_view_t gpgpu_sim::make_kernel_stats_view(unsigned kernel_uid) const
   v.single_issue_nums   = a->single_issue_nums;
   v.dual_issue_nums     = a->dual_issue_nums;
 
+  v.gpgpu_n_shmem_bkconflict       = a->gpgpu_n_shmem_bkconflict;
+  v.gpgpu_n_l1cache_bkconflict     = a->gpgpu_n_l1cache_bkconflict;
+  v.gpgpu_n_intrawarp_mshr_merge   = a->gpgpu_n_intrawarp_mshr_merge;
+  v.gpgpu_n_cmem_portconflict      = a->gpgpu_n_cmem_portconflict;
+  v.gpu_reg_bank_conflict_stalls   = a->gpu_reg_bank_conflict_stalls;
 
+  v.gpgpu_n_stall_shd_mem = a->gpgpu_n_stall_shd_mem;
+
+  v.gpgpu_stall_shd_mem_cmem_resource_stall   = a->gpgpu_stall_shd_mem_cmem_resource_stall;
+  v.gpgpu_stall_shd_mem_smem_bk_conf          = a->gpgpu_stall_shd_mem_smem_bk_conf;
+  v.gpgpu_stall_shd_mem_glmem_resource_stall  = a->gpgpu_stall_shd_mem_glmem_resource_stall;
+  v.gpgpu_stall_shd_mem_glmem_coal_stall      = a->gpgpu_stall_shd_mem_glmem_coal_stall;
+  v.gpgpu_stall_shd_mem_glmem_data_port_stall = a->gpgpu_stall_shd_mem_glmem_data_port_stall;  
+
+  v.outgoing_traffic = &a->outgoing_traffic;
+  v.incoming_traffic = &a->incoming_traffic;
+
+  v.memlat_num_mfs           = a->memlat_num_mfs;
+  v.memlat_mf_total_lat      = a->memlat_mf_total_lat;
+  v.memlat_tot_icnt2mem_lat  = a->memlat_tot_icnt2mem_lat;
+  v.memlat_tot_icnt2sh_lat   = a->memlat_tot_icnt2sh_lat;
+
+  v.memlat_max_mf_lat        = a->memlat_max_mf_lat;
+  v.memlat_max_icnt2mem_lat  = a->memlat_max_icnt2mem_lat;
+  v.memlat_max_mrq_lat       = a->memlat_max_mrq_lat;
+  v.memlat_max_icnt2sh_lat   = a->memlat_max_icnt2sh_lat;
+
+  for (int i = 0; i < 32; i++) {
+    v.memlat_mrq_lat_table[i]   = a->memlat_mrq_lat_table[i];
+    v.memlat_dq_lat_table[i]    = a->memlat_dq_lat_table[i];
+    v.memlat_mf_lat_table[i]    = a->memlat_mf_lat_table[i];
+    v.memlat_mf_lat_pw_table[i] = a->memlat_mf_lat_pw_table[i];
+  }
+  for (int i = 0; i < 24; i++) {
+    v.memlat_icnt2mem_lat_table[i] = a->memlat_icnt2mem_lat_table[i];
+    v.memlat_icnt2sh_lat_table[i]  = a->memlat_icnt2sh_lat_table[i];
+  }
+
+  v.memlat_rowstats_n_mem = m_memory_config->m_n_mem;
+  v.memlat_rowstats_n_bk  = m_memory_config->nbk;
+
+  v.memlat_max_conc_access2samerow =
+      a->memlat_max_conc_access2samerow.empty()
+          ? nullptr
+          : a->memlat_max_conc_access2samerow.data();
+
+  v.memlat_max_servicetime2samerow =a->memlat_max_servicetime2samerow.empty()
+          ? nullptr
+          : a->memlat_max_servicetime2samerow.data();
+
+  v.memlat_row_access = a->memlat_row_access.empty() ? nullptr : a->memlat_row_access.data();
+  v.memlat_num_activates = a->memlat_num_activates.empty() ? nullptr : a->memlat_num_activates.data();
+  v.memlat_totalbankreads =a->memlat_totalbankreads.empty() ? nullptr: a->memlat_totalbankreads.data();
+  v.memlat_totalbankwrites =a->memlat_totalbankwrites.empty() ? nullptr: a->memlat_totalbankwrites.data();  
+  v.totalbankaccesses =a->totalbankaccesses.empty() ? nullptr: a->totalbankaccesses.data();
+  v.memlat_mf_total_laten = a->memlat_mf_total_laten.empty() ? nullptr : a->memlat_mf_total_laten.data();
+  v.memlat_max_mf_laten = a->memlat_max_mf_laten.empty() ? nullptr : a->memlat_max_mf_laten.data();
+  
+
+  //DRAM
+
+  v.dram_n_cmd      = a->dram_n_cmd.empty()      ? nullptr : a->dram_n_cmd.data();
+  v.dram_n_nop      = a->dram_n_nop.empty()      ? nullptr : a->dram_n_nop.data();
+  v.dram_n_activity = a->dram_n_activity.empty() ? nullptr : a->dram_n_activity.data();
+  v.dram_n_act      = a->dram_n_act.empty()      ? nullptr : a->dram_n_act.data();
+  v.dram_n_pre      = a->dram_n_pre.empty()      ? nullptr : a->dram_n_pre.data();
+  v.dram_n_req       = a->dram_n_req.empty()       ? nullptr : a->dram_n_req.data();
+  v.dram_n_ref_event = a->dram_n_ref_event.empty() ? nullptr : a->dram_n_ref_event.data();
+  v.dram_n_rd      = a->dram_n_rd.empty()      ? nullptr : a->dram_n_rd.data();
+  v.dram_n_rd_L2_A = a->dram_n_rd_L2_A.empty() ? nullptr : a->dram_n_rd_L2_A.data();
+  v.dram_n_wr      = a->dram_n_wr.empty()      ? nullptr : a->dram_n_wr.data();
+  v.dram_n_wr_WB   = a->dram_n_wr_WB.empty()   ? nullptr : a->dram_n_wr_WB.data();
+  v.dram_bwutil = a->dram_bwutil.empty() ? nullptr : a->dram_bwutil.data();
+  v.dram_bk_n_access = a->dram_bk_n_access.empty() ? nullptr : a->dram_bk_n_access.data();
+  v.dram_bk_n_idle   = a->dram_bk_n_idle.empty()   ? nullptr : a->dram_bk_n_idle.data();
+
+
+  // BLP stats
+  v.dram_banks_1time             = a->dram_banks_1time.empty()             ? nullptr : a->dram_banks_1time.data();
+  v.dram_banks_access_total      = a->dram_banks_access_total.empty()      ? nullptr : a->dram_banks_access_total.data();
+
+  v.dram_banks_time_rw           = a->dram_banks_time_rw.empty()           ? nullptr : a->dram_banks_time_rw.data();
+  v.dram_banks_access_rw_total   = a->dram_banks_access_rw_total.empty()   ? nullptr : a->dram_banks_access_rw_total.data();
+
+  v.dram_banks_time_ready        = a->dram_banks_time_ready.empty()        ? nullptr : a->dram_banks_time_ready.data();
+  v.dram_banks_access_ready_total= a->dram_banks_access_ready_total.empty()? nullptr : a->dram_banks_access_ready_total.data();
+
+  v.dram_w2r_ratio_sum_1e6       = a->dram_w2r_ratio_sum_1e6.empty()       ? nullptr : a->dram_w2r_ratio_sum_1e6.data();
+  v.dram_bkgrp_parallsim_rw      = a->dram_bkgrp_parallsim_rw.empty()      ? nullptr : a->dram_bkgrp_parallsim_rw.data();
+
+  v.dram_access_num = a->dram_access_num.empty() ? nullptr : a->dram_access_num.data();
+  v.dram_hits_num = a->dram_hits_num.empty() ? nullptr : a->dram_hits_num.data();
+  v.dram_read_num = a->dram_read_num.empty() ? nullptr : a->dram_read_num.data();
+  v.dram_write_num = a->dram_write_num.empty() ? nullptr : a->dram_write_num.data();
+  v.dram_hits_write_num = a->dram_hits_write_num.empty() ? nullptr : a->dram_hits_write_num.data();
+  v.dram_hits_read_num = a->dram_hits_read_num.empty() ? nullptr : a->dram_hits_read_num.data();
+  
+
+  v.dram_util_bw       = a->dram_util_bw.empty()       ? nullptr : a->dram_util_bw.data();
+  v.dram_wasted_bw_col = a->dram_wasted_bw_col.empty() ? nullptr : a->dram_wasted_bw_col.data();
+  v.dram_wasted_bw_row = a->dram_wasted_bw_row.empty() ? nullptr : a->dram_wasted_bw_row.data();
+  v.dram_idle_bw       = a->dram_idle_bw.empty()       ? nullptr : a->dram_idle_bw.data();
+
+  v.dram_RCDc_limit        = a->dram_RCDc_limit.empty()        ? nullptr : a->dram_RCDc_limit.data();
+  v.dram_RCDWRc_limit      = a->dram_RCDWRc_limit.empty()      ? nullptr : a->dram_RCDWRc_limit.data();
+  v.dram_WTRc_limit        = a->dram_WTRc_limit.empty()        ? nullptr : a->dram_WTRc_limit.data();
+  v.dram_RTWc_limit        = a->dram_RTWc_limit.empty()        ? nullptr : a->dram_RTWc_limit.data();
+  v.dram_CCDLc_limit       = a->dram_CCDLc_limit.empty()       ? nullptr : a->dram_CCDLc_limit.data();
+  v.dram_rwq_limit         = a->dram_rwq_limit.empty()         ? nullptr : a->dram_rwq_limit.data();
+  v.dram_CCDLc_limit_alone = a->dram_CCDLc_limit_alone.empty() ? nullptr : a->dram_CCDLc_limit_alone.data();
+  v.dram_WTRc_limit_alone  = a->dram_WTRc_limit_alone.empty()  ? nullptr : a->dram_WTRc_limit_alone.data();
+  v.dram_RTWc_limit_alone  = a->dram_RTWc_limit_alone.empty()  ? nullptr : a->dram_RTWc_limit_alone.data();
+
+  v.dram_issued_total_row = a->dram_issued_total_row.empty() ? nullptr : a->dram_issued_total_row.data();
+  v.dram_issued_total_col = a->dram_issued_total_col.empty() ? nullptr : a->dram_issued_total_col.data();
+  v.dram_issued_total     = a->dram_issued_total.empty()     ? nullptr : a->dram_issued_total.data();
+  v.dram_issued_two       = a->dram_issued_two.empty()       ? nullptr : a->dram_issued_two.data();
+  v.dram_ave_mrqs_sum     = a->dram_ave_mrqs_sum.empty()     ? nullptr : a->dram_ave_mrqs_sum.data();
+
+  v.dram_max_mrqs   = a->dram_max_mrqs.empty()   ? nullptr : a->dram_max_mrqs.data();
+  v.dram_util_bins  = a->dram_util_bins.empty() ? nullptr : a->dram_util_bins.data();
+  v.dram_eff_bins   = a->dram_eff_bins.empty()  ? nullptr : a->dram_eff_bins.data();
+  
   return v;
 }
 
@@ -1968,12 +2095,12 @@ void gpgpu_sim::gpu_print_stat(unsigned long long streamID,
     mcpat_reset_perf_count(m_gpgpusim_wrapper);
   }
 #endif
-
+  //call overload
   // performance counter that are not local to one shader
   m_memory_stats->memlatstat_print(m_memory_config->m_n_mem,
-                                   m_memory_config->nbk);
+                                   m_memory_config->nbk,view);
   for (unsigned i = 0; i < m_memory_config->m_n_mem; i++)
-    m_memory_partition_unit[i]->print(stdout);
+    m_memory_partition_unit[i]->print(stdout,single_kernel_uid,view);
 
   // L2 cache stats
   if (!m_memory_config->m_L2_config.disabled()) {
@@ -2887,7 +3014,7 @@ void sst_gpgpu_sim::SST_cycle() {
 
 void gpgpu_sim::note_kernel_launch(kernel_info_t* k) {
   if (!k) return;
-
+  bind_kernel_to_allowed_sms(k);
   const unsigned long long streamID = k->get_streamID();
   const unsigned kid = k->get_uid();
 
@@ -2900,7 +3027,7 @@ void gpgpu_sim::note_kernel_launch(kernel_info_t* k) {
 
 void gpgpu_sim::note_kernel_completion(kernel_info_t* k) {
   if (!k) return;
-
+  unbind_kernel_from_sms(k->get_uid());
   const unsigned long long streamID = k->get_streamID();
   const unsigned kid = k->get_uid();
 
@@ -2921,8 +3048,13 @@ port_snap_t gpgpu_sim::snap_l1d_ports_for_cluster_(unsigned c) const {
   return s;
 }
 
-void gpgpu_sim::record_kernel_warp_issue(unsigned smid, unsigned warp_id,unsigned sch_id, unsigned active_count,unsigned long long streamID,
-                                          const warp_inst_t *inst) {
+void gpgpu_sim::record_kernel_warp_issue(unsigned smid,
+                                        unsigned warp_id,
+                                        unsigned ,
+                                        unsigned ,
+                                        unsigned long long streamID,
+                                        const warp_inst_t * ) {
+  // Map stream -> kernel uid
   auto it = stream_to_kernel_map.find(streamID);
   if (it == stream_to_kernel_map.end()) return;
   const unsigned kid = it->second;
@@ -2931,79 +3063,883 @@ void gpgpu_sim::record_kernel_warp_issue(unsigned smid, unsigned warp_id,unsigne
   if (rit == m_sched_issue_rec_.end()) return;
 
   auto &rec = rit->second;
-  if (rec.sampling_core < 0) {
-    rec.sampling_core = (int)smid;
-  }
 
+  // choose sampling core once
+  if (rec.sampling_core < 0) rec.sampling_core = (int)smid;
+
+  // only record distro on sampling core (like classic print behavior)
   if (rec.sampling_core != (int)smid) return;
 
+  // warp issue distro
   if (rec.distro.size() <= warp_id) rec.distro.resize(warp_id + 1, 0);
   rec.distro[warp_id]++;
-
-
-  auto &a = kernel_stats_mut_(kid);
-
-  a.warp_icount++;
-
-  a.thrd_icount += m_shader_config->warp_size;
-
-  if (a.shader_cycle_distro.empty()) {
-    a.shader_cycle_distro.assign(m_shader_config->warp_size + 3, 0);
-  }
-  unsigned idx = 2 + active_count;
-  if (idx < a.shader_cycle_distro.size()) a.shader_cycle_distro[idx]++;
-
-  if (a.single_issue_nums.empty()) {
-    a.single_issue_nums.assign(m_shader_config->gpgpu_num_sched_per_core, 0);
-    a.dual_issue_nums.assign(m_shader_config->gpgpu_num_sched_per_core, 0);
-  }
-  if (sch_id < a.single_issue_nums.size()) a.single_issue_nums[sch_id]++;
-
-  if (!inst) return;
-
-  if (inst->is_load())  a.n_load_insn++;
-  if (inst->is_store()) a.n_store_insn++;
-
-  if (!(inst->is_load() || inst->is_store())) return;
-
-  switch (inst->space.get_type()) {
-    case global_space:
-      if (inst->is_load())  a.n_mem_read_global++;
-      if (inst->is_store()) a.n_mem_write_global++;
-      break;
-    case local_space:
-      if (inst->is_load())  a.n_mem_read_local++;
-      if (inst->is_store()) a.n_mem_write_local++;
-      break;
-    case shared_space:
-      a.n_shmem_insn++;
-      break;
-    case const_space:
-      a.n_mem_const++;
-      a.n_const_insn++;
-      break;
-    case tex_space:
-      a.n_mem_texture++;
-      a.n_tex_insn++;
-      break;
-    case param_space_unclassified:
-    case param_space_kernel:
-    case param_space_local:
-      a.n_param_insn++;
-      break;
-    default:
-      break;
-  }
 }
 
 
 
 
+// NEW commit recorders
+void gpgpu_sim::record_kernel_inst_commit(unsigned kernel_uid,
+                                         unsigned active_lanes)
+{
+  auto &a = kernel_stats_mut_(kernel_uid);
+  a.warp_icount++;
+
+  if (!m_shader_config->gpgpu_clock_gated_lanes) {
+    a.thrd_icount += m_shader_config->warp_size;
+  } else {
+    a.thrd_icount += active_lanes;
+  }
+}
+
+void gpgpu_sim::record_kernel_icnt_stats(unsigned kid, const mem_fetch *mf) {
+  if (!kid || !mf) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  switch (mf->get_access_type()) {
+    case CONST_ACC_R:
+      a.n_mem_const++;
+      break;
+
+    case TEXTURE_ACC_R:
+      a.n_mem_texture++;
+      break;
+
+    case GLOBAL_ACC_R:
+      a.n_mem_read_global++;
+      break;
+
+    case GLOBAL_ACC_W:
+      a.n_mem_write_global++;
+      break;
+
+    case LOCAL_ACC_R:
+      a.n_mem_read_local++;
+      break;
+
+    case LOCAL_ACC_W:
+      a.n_mem_write_local++;
+      break;
+
+    case L1_WRBK_ACC:
+      a.n_mem_write_global++;
+      break;
+    default:
+      break;
+  }
+  ////
+}
+
+void gpgpu_sim::record_kernel_mem_inst_commit(unsigned kernel_uid,
+                                              const warp_inst_t &inst) {
+  if (!kernel_uid) return;
+  auto &a = kernel_stats_mut_(kernel_uid);
+  const unsigned active_count = inst.active_count();
+
+  switch (inst.space.get_type()) {
+    case undefined_space:
+    case reg_space:
+      break;
+
+    case shared_space:
+      a.n_shmem_insn += active_count;
+      break;
+
+    case sstarr_space:
+      a.n_sstarr_insn += active_count;
+      break;
+
+    case const_space:
+      a.n_const_insn += active_count;
+      break;
+
+    case param_space_kernel:
+    case param_space_local:
+      a.n_param_insn += active_count;
+      break;
+
+    case tex_space:
+      a.n_tex_insn += active_count;
+      break;
+
+    case global_space:
+    case local_space:
+      if (inst.is_store())
+        a.n_store_insn += active_count;
+      else
+        a.n_load_insn += active_count;
+      break;
+
+    default:
+      abort();
+  }
+  ////
+}
 
 
 
 
+// void gpgpu_sim::record_kernel_mem_read_L1_MISS(unsigned kernel_uid,
+//                                        const warp_inst_t &inst) {
+//   if (!kernel_uid) return;
+//   if (!inst.is_load()) return;   
+
+//   auto &a = kernel_stats_mut_(kernel_uid);
+
+//   switch (inst.space.get_type()) {
+//     case global_space: a.n_mem_read_global++; break;
+//     case local_space:  a.n_mem_read_local++;  break;
+//     default: break; 
+//   }
+// }
 
 
 
+unsigned gpgpu_sim::kernel_uid_from_stream(unsigned long long streamID) const {
+  auto it = stream_to_kernel_map.find(streamID);
+  if (it == stream_to_kernel_map.end()) return 0;
+  return it->second;
+}
 
+void gpgpu_sim::record_kernel_warp_issue_distro(unsigned smid,
+                                               unsigned warp_id,
+                                               unsigned long long streamID) {
+  const unsigned kid = kernel_uid_from_stream(streamID);
+  if (!kid) return;
+
+  auto rit = m_sched_issue_rec_.find(kid);
+  if (rit == m_sched_issue_rec_.end()) return;
+
+  auto &rec = rit->second;
+
+  if (rec.sampling_core < 0) rec.sampling_core = (int)smid;
+
+  if (rec.sampling_core != (int)smid) return;
+
+  if (rec.distro.size() <= warp_id) rec.distro.resize(warp_id + 1, 0);
+  rec.distro[warp_id]++;
+}
+
+void gpgpu_sim::record_kernel_shader_active_count_bucket(unsigned kernel_uid,
+                                                        unsigned active_count) {
+  if (!kernel_uid) return;
+
+  auto &a = kernel_stats_mut_(kernel_uid);
+
+  if (a.shader_cycle_distro.empty()) {
+    a.shader_cycle_distro.assign(m_shader_config->warp_size + 3, 0);
+  }
+
+  const unsigned idx = 2 + active_count; // W1..W32 (since index 2 is Stall)
+  if (idx < a.shader_cycle_distro.size()) a.shader_cycle_distro[idx]++;
+}
+
+static inline void ensure_shader_cycle_distro(kernel_stats_accum_t &a,
+                                             unsigned warp_size) {
+  if (a.shader_cycle_distro.empty()) {
+    a.shader_cycle_distro.assign(warp_size + 3, 0);
+  }
+}
+
+void gpgpu_sim::record_kernel_shader_idle_cycle(unsigned kernel_uid) {
+  if (!kernel_uid) return;
+  auto &a = kernel_stats_mut_(kernel_uid);
+  ensure_shader_cycle_distro(a, m_shader_config->warp_size);
+  a.shader_cycle_distro[0]++; // W0_Idle
+}
+
+void gpgpu_sim::record_kernel_shader_scoreboard_cycle(unsigned kernel_uid) {
+  if (!kernel_uid) return;
+  auto &a = kernel_stats_mut_(kernel_uid);
+  ensure_shader_cycle_distro(a, m_shader_config->warp_size);
+  a.shader_cycle_distro[1]++; // W0_Scoreboard
+}
+
+void gpgpu_sim::record_kernel_shader_stall_cycle(unsigned kernel_uid) {
+  if (!kernel_uid) return;
+  auto &a = kernel_stats_mut_(kernel_uid);
+  ensure_shader_cycle_distro(a, m_shader_config->warp_size);
+  a.shader_cycle_distro[2]++; // Stall
+}
+
+void gpgpu_sim::record_kernel_scheduler_issue(unsigned kernel_uid,
+                                             unsigned sched_id,
+                                             unsigned issued_count) {
+  if (!kernel_uid) return;
+
+  auto &a = kernel_stats_mut_(kernel_uid);
+
+  if (a.single_issue_nums.empty()) {
+    a.single_issue_nums.assign(m_shader_config->gpgpu_num_sched_per_core, 0);
+    a.dual_issue_nums.assign(m_shader_config->gpgpu_num_sched_per_core, 0);
+  }
+
+  if (sched_id >= a.single_issue_nums.size()) return;
+
+  if (issued_count == 1) a.single_issue_nums[sched_id]++;
+  else if (issued_count > 1) a.dual_issue_nums[sched_id]++;
+}
+
+unsigned gpgpu_sim::kernel_uid_from_smid(unsigned sid) const {
+  if (sid >= m_sm_owner_kid.size()) return 0;
+  return m_sm_owner_kid[sid];
+}
+
+void gpgpu_sim::bind_kernel_to_allowed_sms(const kernel_info_t *k) {
+  if (!k) return;
+  const unsigned kid = k->get_uid();
+  if (!kid) return;
+
+  if (m_sm_owner_kid.empty())
+    m_sm_owner_kid.assign(m_shader_config->num_shader(), 0);
+
+  for (unsigned sid = 0; sid < m_shader_config->num_shader(); ++sid) {
+    if (!k->is_sm_allowed(sid)) continue;
+
+    if (m_sm_owner_kid[sid] != 0 && m_sm_owner_kid[sid] != kid) {
+    }
+    m_sm_owner_kid[sid] = kid;
+  }
+}
+
+void gpgpu_sim::unbind_kernel_from_sms(unsigned kid) {
+  if (!kid) return;
+  for (auto &x : m_sm_owner_kid)
+    if (x == kid) x = 0;
+}
+
+
+void gpgpu_sim::record_kernel_shmem_bkconflict(unsigned kid) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).gpgpu_n_shmem_bkconflict++;
+}
+
+void gpgpu_sim::record_kernel_l1cache_bkconflict(unsigned kid) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).gpgpu_n_l1cache_bkconflict++;
+}
+
+void gpgpu_sim::record_kernel_intrawarp_mshr_merge(unsigned kid) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).gpgpu_n_intrawarp_mshr_merge++;
+}
+
+void gpgpu_sim::record_kernel_cmem_portconflict(unsigned kid) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).gpgpu_n_cmem_portconflict++;
+}
+
+void gpgpu_sim::record_kernel_reg_bank_conflict_stall(unsigned kid) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).gpu_reg_bank_conflict_stalls++;
+}
+
+
+void gpgpu_sim::record_kernel_stall_shd_mem(unsigned kid,
+                                            unsigned access_type,
+                                            unsigned stall_type) {
+  if (!kid) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  a.gpgpu_n_stall_shd_mem++;
+
+  // ---- matches classic printing semantics ----
+  // classic prints:
+  //   c_mem][resource_stall]  -> breakdown[C_MEM][BK_CONF]
+  //   s_mem][bk_conf]         -> breakdown[S_MEM][BK_CONF]
+  //   gl_mem][resource_stall] -> sum of *_MEM_* [BK_CONF]
+  //   gl_mem][coal_stall]     -> sum of *_MEM_* [COAL_STALL]
+  //   gl_mem][data_port_stall]-> sum of *_MEM_* [DATA_PORT_STALL]
+
+  if (access_type == C_MEM && stall_type == BK_CONF) {
+    a.gpgpu_stall_shd_mem_cmem_resource_stall++;
+    return;
+  }
+
+  if (access_type == S_MEM && stall_type == BK_CONF) {
+    a.gpgpu_stall_shd_mem_smem_bk_conf++;
+    return;
+  }
+
+  const bool is_glmem =
+      (access_type == G_MEM_LD || access_type == G_MEM_ST ||
+       access_type == L_MEM_LD || access_type == L_MEM_ST);
+
+  if (!is_glmem) return;
+
+  if (stall_type == BK_CONF) {
+    a.gpgpu_stall_shd_mem_glmem_resource_stall++;
+  } else if (stall_type == COAL_STALL) {
+    a.gpgpu_stall_shd_mem_glmem_coal_stall++;
+  } else if (stall_type == DATA_PORT_STALL) {
+    a.gpgpu_stall_shd_mem_glmem_data_port_stall++;
+  }
+}
+
+void gpgpu_sim::record_kernel_outgoing_traffic(unsigned kid,
+                                               mem_fetch *mf,
+                                               unsigned sz) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).outgoing_traffic.record_traffic(mf, sz);
+}
+
+void gpgpu_sim::record_kernel_incoming_traffic(unsigned kid,
+                                               mem_fetch *mf,
+                                               unsigned sz) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).incoming_traffic.record_traffic(mf, sz);
+}
+
+
+
+void gpgpu_sim::record_kernel_memlat(unsigned kid,
+                                    unsigned mf_lat,
+                                    unsigned icnt2mem_lat,
+                                    unsigned mrq_lat,
+                                    unsigned icnt2sh_lat) {
+  if (!kid) return;
+  auto &a = kernel_stats_mut_(kid);
+
+  a.memlat_num_mfs++;
+
+  a.memlat_mf_total_lat       += mf_lat;
+  a.memlat_tot_icnt2mem_lat   += icnt2mem_lat;
+  a.memlat_tot_icnt2sh_lat    += icnt2sh_lat;
+
+  if (mf_lat > a.memlat_max_mf_lat) a.memlat_max_mf_lat = mf_lat;
+  if (icnt2mem_lat > a.memlat_max_icnt2mem_lat) a.memlat_max_icnt2mem_lat = icnt2mem_lat;
+  if (mrq_lat > a.memlat_max_mrq_lat) a.memlat_max_mrq_lat = mrq_lat;
+  if (icnt2sh_lat > a.memlat_max_icnt2sh_lat) a.memlat_max_icnt2sh_lat = icnt2sh_lat;
+}
+
+
+static inline unsigned clamp_bucket(unsigned b, unsigned max) {
+  return (b >= max) ? (max - 1) : b;
+}
+
+void gpgpu_sim::record_kernel_mrq_lat_bucket(unsigned kid, unsigned mrq_lat) {
+  if (!kid || !mrq_lat) return;
+  auto &a = kernel_stats_mut_(kid);
+  unsigned b = clamp_bucket(LOGB2(mrq_lat), 32);
+  a.memlat_mrq_lat_table[b]++;
+}
+
+void gpgpu_sim::record_kernel_icnt2mem_lat_bucket(unsigned kid, unsigned lat) {
+  if (!kid || !lat) return;
+  auto &a = kernel_stats_mut_(kid);
+  unsigned b = clamp_bucket(LOGB2(lat), 24);
+  a.memlat_icnt2mem_lat_table[b]++;
+}
+
+void gpgpu_sim::record_kernel_icnt2sh_lat_bucket(unsigned kid, unsigned lat) {
+  if (!kid || !lat) return;
+  auto &a = kernel_stats_mut_(kid);
+  unsigned b = clamp_bucket(LOGB2(lat), 24);
+  a.memlat_icnt2sh_lat_table[b]++;
+}
+
+void gpgpu_sim::record_kernel_mf_lat_bucket(unsigned kid, unsigned mf_lat) {
+  if (!kid || !mf_lat) return;
+  auto &a = kernel_stats_mut_(kid);
+  unsigned b = clamp_bucket(LOGB2(mf_lat), 32);
+  a.memlat_mf_lat_table[b]++;
+}
+
+
+void gpgpu_sim::record_kernel_mf_lat_pw_accum(unsigned kid, unsigned mf_lat) {
+  if (!kid || !mf_lat) return;
+  auto &a = kernel_stats_mut_(kid);
+  a.memlat_mf_num_lat_pw++;
+  a.memlat_mf_tot_lat_pw += mf_lat;
+}
+
+void gpgpu_sim::flush_kernel_mf_lat_pw_tables() {
+  for (auto &kv : m_kernel_stats_) {
+    auto &a = kv.second;
+    if (!a.memlat_mf_num_lat_pw) continue;
+    unsigned avg = (unsigned)(a.memlat_mf_tot_lat_pw / a.memlat_mf_num_lat_pw);
+    unsigned b = clamp_bucket(LOGB2(avg), 32);
+    a.memlat_mf_lat_pw_table[b]++;
+    a.memlat_mf_tot_lat_pw = 0;
+    a.memlat_mf_num_lat_pw = 0;
+  }
+}
+
+
+void gpgpu_sim::record_kernel_row_episode_access(unsigned kid,
+                                                 unsigned dram,
+                                                 unsigned bank,
+                                                 unsigned cnt) {
+  if (!kid || !cnt) return;
+  auto &a = kernel_stats_mut_(kid);
+
+  unsigned n_mem = m_memory_config->m_n_mem;
+  unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  // [ADDED] lazy init
+  if (a.memlat_max_conc_access2samerow.empty()) {
+    a.memlat_max_conc_access2samerow.assign(n_mem * nbk, 0);
+  }
+
+  unsigned idx = dram * nbk + bank;
+  if (cnt > a.memlat_max_conc_access2samerow[idx])
+    a.memlat_max_conc_access2samerow[idx] = cnt;
+}
+
+// [ADDED]
+void gpgpu_sim::record_kernel_row_episode_servicetime(unsigned kid,
+                                                      unsigned dram,
+                                                      unsigned bank,
+                                                      unsigned srv) {
+  if (!kid || !srv) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  unsigned n_mem = m_memory_config->m_n_mem;
+  unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  // lazy init
+  if (a.memlat_max_servicetime2samerow.empty()) {
+    a.memlat_max_servicetime2samerow.assign(n_mem * nbk, 0);
+  }
+
+  unsigned idx = dram * nbk + bank;
+  if (srv > a.memlat_max_servicetime2samerow[idx])
+    a.memlat_max_servicetime2samerow[idx] = srv;
+}
+
+
+void gpgpu_sim::record_kernel_row_access(unsigned kid,
+                                         unsigned dram,
+                                         unsigned bank) {
+  if (!kid) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  unsigned n_mem = m_memory_config->m_n_mem;
+  unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  if (a.memlat_row_access.empty())
+    a.memlat_row_access.assign(n_mem * nbk, 0);
+
+  unsigned idx = flat_idx(dram, bank, nbk);
+  a.memlat_row_access[idx] += 1ULL;
+}
+
+void gpgpu_sim::record_kernel_row_activate(unsigned kid,
+                                           unsigned dram,
+                                           unsigned bank) {
+  if (!kid) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  unsigned n_mem = m_memory_config->m_n_mem;
+  unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  if (a.memlat_num_activates.empty())
+    a.memlat_num_activates.assign(n_mem * nbk, 0);
+
+  unsigned idx = flat_idx(dram, bank, nbk);
+  a.memlat_num_activates[idx] += 1ULL;
+}
+
+
+void gpgpu_sim::record_kernel_totalbankread(unsigned kid,unsigned dram,unsigned bank,unsigned long long inc) {
+  if (!kid || !inc) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  unsigned n_mem = m_memory_config->m_n_mem;
+  unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  if (a.memlat_totalbankreads.empty())
+    a.memlat_totalbankreads.assign(n_mem * nbk, 0ULL);
+
+  unsigned idx = dram * nbk + bank;
+  a.memlat_totalbankreads[idx] += inc;
+}
+
+void gpgpu_sim::record_kernel_mf_bank_lat_sum(unsigned kid,unsigned dram,unsigned bank,unsigned mf_latency) {
+  if (!kid || !mf_latency) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  const unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  const unsigned sz  = n_mem * nbk;
+  const unsigned idx = dram * nbk + bank;
+
+  if (a.memlat_mf_total_laten.empty())
+    a.memlat_mf_total_laten.assign(sz, 0ULL);
+
+  a.memlat_mf_total_laten[idx] += (unsigned long long)mf_latency;
+}
+
+void gpgpu_sim::record_max_mf_lat_per_bank(unsigned kid,unsigned dram,unsigned bank,unsigned mf_latency){
+  if(!kid||!mf_latency) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  const unsigned nbk   = m_memory_config->nbk;
+  if (dram >= n_mem || bank >= nbk) return;
+  auto &a = kernel_stats_mut_(kid);
+  const unsigned sz  = n_mem * nbk;
+  const unsigned idx = dram * nbk + bank;
+  if (a.memlat_max_mf_laten.empty())
+    a.memlat_max_mf_laten.assign(sz, 0ULL);
+
+  if(a.memlat_max_mf_laten[idx] < mf_latency) a.memlat_max_mf_laten[idx] = mf_latency;
+}
+
+
+
+void gpgpu_sim::record_kernel_dram_cycle_counters(unsigned kid,
+                                                  unsigned dram_id,
+                                                  unsigned long long inc_cmd,
+                                                  unsigned long long inc_nop,
+                                                  unsigned long long inc_act) {
+  if (!kid) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_n_cmd.empty())      a.dram_n_cmd.assign(n_mem, 0ULL);
+  if (a.dram_n_nop.empty())      a.dram_n_nop.assign(n_mem, 0ULL);
+  if (a.dram_n_activity.empty()) a.dram_n_activity.assign(n_mem, 0ULL);
+
+  a.dram_n_cmd[dram_id]      += inc_cmd;
+  a.dram_n_nop[dram_id]      += inc_nop;
+  a.dram_n_activity[dram_id] += inc_act;
+}
+
+void gpgpu_sim::record_kernel_dram_row_cmd_counters(unsigned kid,
+                                                    unsigned dram_id,
+                                                    unsigned long long inc_act,
+                                                    unsigned long long inc_pre) {
+  if (!kid) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_n_act.empty()) a.dram_n_act.assign(n_mem, 0ULL);
+  if (a.dram_n_pre.empty()) a.dram_n_pre.assign(n_mem, 0ULL);
+
+  a.dram_n_act[dram_id] += inc_act;
+  a.dram_n_pre[dram_id] += inc_pre;
+}
+
+void gpgpu_sim::record_kernel_dram_req_ref_event(unsigned kid,
+                                                 unsigned dram_id,
+                                                 unsigned long long inc_req,
+                                                 unsigned long long inc_ref) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_n_req.empty())       a.dram_n_req.assign(n_mem, 0ULL);
+  if (a.dram_n_ref_event.empty()) a.dram_n_ref_event.assign(n_mem, 0ULL);
+
+  a.dram_n_req[dram_id]       += inc_req;
+  a.dram_n_ref_event[dram_id] += inc_ref;
+}
+
+void gpgpu_sim::record_kernel_dram_rw_counters(unsigned kid, unsigned dram_id,
+                                              unsigned long long inc_rd,
+                                              unsigned long long inc_rd_l2a,
+                                              unsigned long long inc_wr,
+                                              unsigned long long inc_wr_wb) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_n_rd.empty())      a.dram_n_rd.assign(n_mem, 0ULL);
+  if (a.dram_n_rd_L2_A.empty()) a.dram_n_rd_L2_A.assign(n_mem, 0ULL);
+  if (a.dram_n_wr.empty())      a.dram_n_wr.assign(n_mem, 0ULL);
+  if (a.dram_n_wr_WB.empty())   a.dram_n_wr_WB.assign(n_mem, 0ULL);
+
+  a.dram_n_rd[dram_id]      += inc_rd;
+  a.dram_n_rd_L2_A[dram_id] += inc_rd_l2a;
+  a.dram_n_wr[dram_id]      += inc_wr;
+  a.dram_n_wr_WB[dram_id]   += inc_wr_wb;
+}
+
+void gpgpu_sim::record_kernel_dram_bwutil(unsigned kid,
+                                         unsigned dram_id,
+                                         unsigned long long inc_bwutil) {
+  if (!kid) return;
+  if (!inc_bwutil) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_bwutil.empty()) {
+    a.dram_bwutil.resize(m_memory_config->m_n_mem, 0ULL);
+  }
+  if (dram_id >= a.dram_bwutil.size()) return;
+
+  a.dram_bwutil[dram_id] += inc_bwutil;
+}
+
+
+
+void gpgpu_sim::record_kernel_dram_bank_access(unsigned kid, unsigned dram_id,
+                                               unsigned bank,
+                                               unsigned long long inc_access) {
+  if (!kid) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  const unsigned nbk   = m_memory_config->nbk;
+  if (dram_id >= n_mem || bank >= nbk) return;
+
+  const unsigned idx = dram_id * nbk + bank;
+
+  auto &a = kernel_stats_mut_(kid);
+  if (a.dram_bk_n_access.empty()) a.dram_bk_n_access.assign(n_mem * nbk, 0ULL);
+  a.dram_bk_n_access[idx] += inc_access;
+}
+
+void gpgpu_sim::record_kernel_dram_bank_idle(unsigned kid, unsigned dram_id,
+                                             unsigned bank,
+                                             unsigned long long inc_idle) {
+  if (!kid) return;
+
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  const unsigned nbk   = m_memory_config->nbk;
+  if (dram_id >= n_mem || bank >= nbk) return;
+
+  const unsigned idx = dram_id * nbk + bank;
+
+  auto &a = kernel_stats_mut_(kid);
+  if (a.dram_bk_n_idle.empty()) a.dram_bk_n_idle.assign(n_mem * nbk, 0ULL);
+  a.dram_bk_n_idle[idx] += inc_idle;
+}
+
+
+void gpgpu_sim::record_kernel_dram_rowbuf_locality(unsigned kid,
+                                                   unsigned dram_id,
+                                                   bool is_write,
+                                                   bool is_row_hit) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_access_num.empty())     a.dram_access_num.assign(n_mem, 0ULL);
+  if (a.dram_hits_num.empty())       a.dram_hits_num.assign(n_mem, 0ULL);
+  if (a.dram_read_num.empty())       a.dram_read_num.assign(n_mem, 0ULL);
+  if (a.dram_hits_read_num.empty())  a.dram_hits_read_num.assign(n_mem, 0ULL);
+  if (a.dram_write_num.empty())      a.dram_write_num.assign(n_mem, 0ULL);
+  if (a.dram_hits_write_num.empty()) a.dram_hits_write_num.assign(n_mem, 0ULL);
+
+  a.dram_access_num[dram_id] += 1ULL;
+  if (is_row_hit) a.dram_hits_num[dram_id] += 1ULL;
+
+  if (is_write) {
+    a.dram_write_num[dram_id] += 1ULL;
+    if (is_row_hit) a.dram_hits_write_num[dram_id] += 1ULL;
+  } else {
+    a.dram_read_num[dram_id] += 1ULL;
+    if (is_row_hit) a.dram_hits_read_num[dram_id] += 1ULL;
+  }
+}
+
+void gpgpu_sim::record_kernel_dram_blp_stats(unsigned kid, unsigned dram_id,
+                                             unsigned long long inc_banks_1time,
+                                             unsigned long long inc_banks_access_total,
+                                             unsigned long long inc_banks_time_rw,
+                                             unsigned long long inc_banks_access_rw_total,
+                                             unsigned long long inc_banks_time_ready,
+                                             unsigned long long inc_banks_access_ready_total,
+                                             unsigned long long inc_w2r_ratio_sum_1e6,
+                                             unsigned long long inc_bkgrp_parallsim_rw) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_banks_1time.empty())              a.dram_banks_1time.assign(n_mem, 0ULL);
+  if (a.dram_banks_access_total.empty())       a.dram_banks_access_total.assign(n_mem, 0ULL);
+
+  if (a.dram_banks_time_rw.empty())            a.dram_banks_time_rw.assign(n_mem, 0ULL);
+  if (a.dram_banks_access_rw_total.empty())    a.dram_banks_access_rw_total.assign(n_mem, 0ULL);
+
+  if (a.dram_banks_time_ready.empty())         a.dram_banks_time_ready.assign(n_mem, 0ULL);
+  if (a.dram_banks_access_ready_total.empty()) a.dram_banks_access_ready_total.assign(n_mem, 0ULL);
+
+  if (a.dram_w2r_ratio_sum_1e6.empty())        a.dram_w2r_ratio_sum_1e6.assign(n_mem, 0ULL);
+  if (a.dram_bkgrp_parallsim_rw.empty())       a.dram_bkgrp_parallsim_rw.assign(n_mem, 0ULL);
+
+  a.dram_banks_1time[dram_id]               += inc_banks_1time;
+  a.dram_banks_access_total[dram_id]        += inc_banks_access_total;
+
+  a.dram_banks_time_rw[dram_id]             += inc_banks_time_rw;
+  a.dram_banks_access_rw_total[dram_id]     += inc_banks_access_rw_total;
+
+  a.dram_banks_time_ready[dram_id]          += inc_banks_time_ready;
+  a.dram_banks_access_ready_total[dram_id]  += inc_banks_access_ready_total;
+
+  a.dram_w2r_ratio_sum_1e6[dram_id]         += inc_w2r_ratio_sum_1e6;
+  a.dram_bkgrp_parallsim_rw[dram_id]        += inc_bkgrp_parallsim_rw;
+}
+
+void gpgpu_sim::record_kernel_dram_bw_class(unsigned kid, unsigned dram_id,
+                                            unsigned long long inc_util,
+                                            unsigned long long inc_wcol,
+                                            unsigned long long inc_wrow,
+                                            unsigned long long inc_idle) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_util_bw.empty())       a.dram_util_bw.assign(n_mem, 0ULL);
+  if (a.dram_wasted_bw_col.empty()) a.dram_wasted_bw_col.assign(n_mem, 0ULL);
+  if (a.dram_wasted_bw_row.empty()) a.dram_wasted_bw_row.assign(n_mem, 0ULL);
+  if (a.dram_idle_bw.empty())       a.dram_idle_bw.assign(n_mem, 0ULL);
+
+  a.dram_util_bw[dram_id]       += inc_util;
+  a.dram_wasted_bw_col[dram_id] += inc_wcol;
+  a.dram_wasted_bw_row[dram_id] += inc_wrow;
+  a.dram_idle_bw[dram_id]       += inc_idle;
+}
+
+void gpgpu_sim::record_kernel_dram_bw_bottlenecks(unsigned kid, unsigned dram_id,
+                                                  unsigned long long inc_RCDc,
+                                                  unsigned long long inc_RCDWRc,
+                                                  unsigned long long inc_WTRc,
+                                                  unsigned long long inc_RTWc,
+                                                  unsigned long long inc_CCDLc,
+                                                  unsigned long long inc_rwq,
+                                                  unsigned long long inc_CCDLc_alone,
+                                                  unsigned long long inc_WTRc_alone,
+                                                  unsigned long long inc_RTWc_alone) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_RCDc_limit.empty())        a.dram_RCDc_limit.assign(n_mem, 0ULL);
+  if (a.dram_RCDWRc_limit.empty())      a.dram_RCDWRc_limit.assign(n_mem, 0ULL);
+  if (a.dram_WTRc_limit.empty())        a.dram_WTRc_limit.assign(n_mem, 0ULL);
+  if (a.dram_RTWc_limit.empty())        a.dram_RTWc_limit.assign(n_mem, 0ULL);
+  if (a.dram_CCDLc_limit.empty())       a.dram_CCDLc_limit.assign(n_mem, 0ULL);
+  if (a.dram_rwq_limit.empty())         a.dram_rwq_limit.assign(n_mem, 0ULL);
+  if (a.dram_CCDLc_limit_alone.empty()) a.dram_CCDLc_limit_alone.assign(n_mem, 0ULL);
+  if (a.dram_WTRc_limit_alone.empty())  a.dram_WTRc_limit_alone.assign(n_mem, 0ULL);
+  if (a.dram_RTWc_limit_alone.empty())  a.dram_RTWc_limit_alone.assign(n_mem, 0ULL);
+
+  a.dram_RCDc_limit[dram_id]          += inc_RCDc;
+  a.dram_RCDWRc_limit[dram_id]        += inc_RCDWRc;
+  a.dram_WTRc_limit[dram_id]          += inc_WTRc;
+  a.dram_RTWc_limit[dram_id]          += inc_RTWc;
+  a.dram_CCDLc_limit[dram_id]         += inc_CCDLc;
+  a.dram_rwq_limit[dram_id]           += inc_rwq;
+  a.dram_CCDLc_limit_alone[dram_id]   += inc_CCDLc_alone;
+  a.dram_WTRc_limit_alone[dram_id]    += inc_WTRc_alone;
+  a.dram_RTWc_limit_alone[dram_id]    += inc_RTWc_alone;
+}
+
+void gpgpu_sim::record_kernel_dram_issue_stats(unsigned kid, unsigned dram_id,
+                                               unsigned long long inc_row,
+                                               unsigned long long inc_col,
+                                               unsigned long long inc_total,
+                                               unsigned long long inc_two,
+                                               unsigned long long inc_ave_mrqs) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_issued_total_row.empty()) a.dram_issued_total_row.assign(n_mem, 0ULL);
+  if (a.dram_issued_total_col.empty()) a.dram_issued_total_col.assign(n_mem, 0ULL);
+  if (a.dram_issued_total.empty())     a.dram_issued_total.assign(n_mem, 0ULL);
+  if (a.dram_issued_two.empty())       a.dram_issued_two.assign(n_mem, 0ULL);
+  if (a.dram_ave_mrqs_sum.empty())     a.dram_ave_mrqs_sum.assign(n_mem, 0ULL);
+
+  a.dram_issued_total_row[dram_id] += inc_row;
+  a.dram_issued_total_col[dram_id] += inc_col;
+  a.dram_issued_total[dram_id]     += inc_total;
+  a.dram_issued_two[dram_id]       += inc_two;
+  a.dram_ave_mrqs_sum[dram_id]     += inc_ave_mrqs;
+}
+
+void gpgpu_sim::record_kernel_dram_max_mrqs(unsigned kid,
+                                            unsigned dram_id,
+                                            unsigned long long qlen) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_max_mrqs.empty()) a.dram_max_mrqs.assign(n_mem, 0ULL);
+
+  if (qlen > a.dram_max_mrqs[dram_id]) a.dram_max_mrqs[dram_id] = qlen;
+}
+
+static inline unsigned clamp_bin_0_9(unsigned pct) {
+  if (pct > 99) pct = 99;
+  return pct / 10;
+}
+
+void gpgpu_sim::record_kernel_dram_util_eff_bins_interval(unsigned kid,
+                                                          unsigned dram_id) {
+  if (!kid) return;
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  if (dram_id >= n_mem) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.dram_last_n_cmd.empty())      a.dram_last_n_cmd.assign(n_mem, 0ULL);
+  if (a.dram_last_n_activity.empty()) a.dram_last_n_activity.assign(n_mem, 0ULL);
+  if (a.dram_last_bwutil.empty())     a.dram_last_bwutil.assign(n_mem, 0ULL);
+
+  if (a.dram_util_bins.empty()) a.dram_util_bins.assign(n_mem * 10, 0ULL);
+  if (a.dram_eff_bins.empty())  a.dram_eff_bins.assign(n_mem * 10, 0ULL);
+
+  const unsigned long long cur_cmd =
+      (a.dram_n_cmd.size() > dram_id) ? a.dram_n_cmd[dram_id] : 0ULL;
+  const unsigned long long cur_act =
+      (a.dram_n_activity.size() > dram_id) ? a.dram_n_activity[dram_id] : 0ULL;
+  const unsigned long long cur_bw =
+      (a.dram_bwutil.size() > dram_id) ? a.dram_bwutil[dram_id] : 0ULL;
+
+  const unsigned long long d_cmd = cur_cmd - a.dram_last_n_cmd[dram_id];
+  const unsigned long long d_act = cur_act - a.dram_last_n_activity[dram_id];
+  const unsigned long long d_bw  = cur_bw  - a.dram_last_bwutil[dram_id];
+
+  a.dram_last_n_cmd[dram_id]      = cur_cmd;
+  a.dram_last_n_activity[dram_id] = cur_act;
+  a.dram_last_bwutil[dram_id]     = cur_bw;
+
+  // util% = 100 * bwutil / cmd   (same style as visualizer_print does globally)
+  unsigned util_pct = 0;
+  if (d_cmd) util_pct = (unsigned)((100.0 * (double)d_bw / (double)d_cmd) + 0.5);
+
+  // eff%  = 100 * bwutil / activity
+  unsigned eff_pct = 0;
+  if (d_act) eff_pct = (unsigned)((100.0 * (double)d_bw / (double)d_act) + 0.5);
+
+  a.dram_util_bins[dram_id * 10 + clamp_bin_0_9(util_pct)]++;
+  a.dram_eff_bins [dram_id * 10 + clamp_bin_0_9(eff_pct)]++;
+}

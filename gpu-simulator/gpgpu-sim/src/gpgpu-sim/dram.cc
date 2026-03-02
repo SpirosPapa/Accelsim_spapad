@@ -38,6 +38,8 @@
 #include "l2cache.h"
 #include "mem_fetch.h"
 #include "mem_latency_stat.h"
+#include <unordered_map>
+#include <bitset>
 
 #ifdef DRAM_VERIFY
 int PRINT_CYCLE = 0;
@@ -54,7 +56,7 @@ dram_t::dram_t(unsigned int partition_id, const memory_config *config,
   m_stats = stats;
   m_config = config;
   m_gpu = gpu;
-
+  m_last_mrq_per_bank.assign(m_config->nbk, nullptr);
   // rowblp
   access_num = 0;
   hits_num = 0;
@@ -255,10 +257,18 @@ void dram_t::push(class mem_fetch *data) {
   data->set_status(IN_PARTITION_MC_INTERFACE_QUEUE,
                    m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
   mrqq->push(mrq);
-
+  //MY ADDITION
+  if (data && data->has_kernel_uid()) {
+    unsigned kid = data->get_kernel_uid();
+    if (kid) m_outstanding_reqs_by_kid[kid] += 1ULL;
+  }
   // stats...
   n_req += 1;
   n_req_partial += 1;
+  // [KID] Per-kernel DRAM request count
+  if (data && data->has_kernel_uid()) {
+    m_gpu->record_kernel_dram_req_ref_event(data->get_kernel_uid(), id, 1ULL, 0ULL);
+  }
   if (m_config->scheduler_type == DRAM_FRFCFS) {
     unsigned nreqs = m_frfcfs_scheduler->num_pending();
     if (nreqs > max_mrqs_temp) max_mrqs_temp = nreqs;
@@ -288,9 +298,19 @@ void dram_t::scheduler_fifo() {
   a ^= b;
 
 void dram_t::cycle() {
+
+  unsigned served_kid = 0;
+
+  // -----------------------------
+  // Return queue / data dequeue
+  // -----------------------------
   if (!returnq->full()) {
     dram_req_t *cmd = rwq->pop();
     if (cmd) {
+      if (cmd->data) {
+        mem_fetch *mf = cmd->data;
+        if (mf->has_kernel_uid()) served_kid = mf->get_kernel_uid();
+      }
 #ifdef DRAM_VIEWCMD
       printf("\tDQ: BK%d Row:%03x Col:%03x", cmd->bk, cmd->row,
              cmd->col + cmd->dqbytes);
@@ -317,9 +337,9 @@ void dram_t::cycle() {
     }
   }
 
-  /* check if the upcoming request is on an idle bank */
-  /* Should we modify this so that multiple requests are checked? */
-
+  // -----------------------------
+  // DRAM scheduler
+  // -----------------------------
   switch (m_config->scheduler_type) {
     case DRAM_FIFO:
       scheduler_fifo();
@@ -331,21 +351,46 @@ void dram_t::cycle() {
       printf("Error: Unknown DRAM scheduler type\n");
       assert(0);
   }
+
+  // Track queue length (for ave_mrqs and per-kernel queue_avg)
+  unsigned long long this_nreqs = 0ULL;
   if (m_config->scheduler_type == DRAM_FRFCFS) {
     unsigned nreqs = m_frfcfs_scheduler->num_pending();
-    if (nreqs > max_mrqs) {
-      max_mrqs = nreqs;
-    }
+    this_nreqs = nreqs;
+    if (nreqs > max_mrqs) max_mrqs = nreqs;
     ave_mrqs += nreqs;
     ave_mrqs_partial += nreqs;
   } else {
-    if (mrqq->get_length() > max_mrqs) {
-      max_mrqs = mrqq->get_length();
-    }
-    ave_mrqs += mrqq->get_length();
-    ave_mrqs_partial += mrqq->get_length();
+    unsigned qlen = mrqq->get_length();
+    this_nreqs = qlen;
+    if (qlen > max_mrqs) max_mrqs = qlen;
+    ave_mrqs += qlen;
+    ave_mrqs_partial += qlen;
   }
 
+  // --------------------------------------------------------
+  // [KID] Row-buffer locality (once per request entering bank)
+  // --------------------------------------------------------
+  if (m_last_mrq_per_bank.empty())
+    m_last_mrq_per_bank.assign(m_config->nbk, nullptr);
+
+  for (unsigned b = 0; b < m_config->nbk; ++b) {
+    dram_req_t *cur = bk[b]->mrq;
+    if (cur != m_last_mrq_per_bank[b]) {
+      if (cur && cur->data && cur->data->has_kernel_uid()) {
+        const unsigned kid = cur->data->get_kernel_uid();
+        const bool is_write = (cur->rw == WRITE);
+        const bool is_hit =
+            (bk[b]->state == BANK_ACTIVE) && (bk[b]->curr_row == cur->row);
+        m_gpu->record_kernel_dram_rowbuf_locality(kid, id, is_write, is_hit);
+      }
+      m_last_mrq_per_bank[b] = cur;
+    }
+  }
+
+  // -----------------------------
+  // Bank activity bookkeeping
+  // -----------------------------
   unsigned k = m_config->nbk;
   bool issued = false;
 
@@ -361,7 +406,7 @@ void dram_t::cycle() {
   unsigned int memory_pending_rw = 0;
   unsigned read_blp_rw = 0;
   unsigned write_blp_rw = 0;
-  std::bitset<8> bnkgrp_rw_found;  // assume max we have 8 bank groups
+  std::bitset<8> bnkgrp_rw_found;  // vanilla assumes max 8 bank groups
 
   for (unsigned j = 0; j < m_config->nbk; j++) {
     unsigned grp = get_bankgrp_number(j);
@@ -370,13 +415,13 @@ void dram_t::cycle() {
           (bk[j]->state == BANK_ACTIVE)))) {
       memory_pending_rw++;
       read_blp_rw++;
-      bnkgrp_rw_found.set(grp);
+      if (grp < 8) bnkgrp_rw_found.set(grp);
     } else if (bk[j]->mrq &&
                (((bk[j]->curr_row == bk[j]->mrq->row) &&
                  (bk[j]->mrq->rw == WRITE) && (bk[j]->state == BANK_ACTIVE)))) {
       memory_pending_rw++;
       write_blp_rw++;
-      bnkgrp_rw_found.set(grp);
+      if (grp < 8) bnkgrp_rw_found.set(grp);
     }
   }
   banks_time_rw += memory_pending_rw;
@@ -404,12 +449,128 @@ void dram_t::cycle() {
   if (memory_Pending_ready > 0) banks_access_ready_total++;
   ///////////////////////////////////////////////////////////////////////////////////
 
+  // --------------------------------------------------------
+  // [KID] Per-kernel BLP stats (per-cycle snapshots)
+  // --------------------------------------------------------
+  std::unordered_map<unsigned, unsigned> kid_pending;
+  std::unordered_map<unsigned, unsigned> kid_pending_rw;
+  std::unordered_map<unsigned, unsigned> kid_pending_ready;
+  std::unordered_map<unsigned, unsigned> kid_read_blp_rw;
+  std::unordered_map<unsigned, unsigned> kid_write_blp_rw;
+  std::unordered_map<unsigned, unsigned long long> kid_grp_mask;  // safer than bitset<8>
+
+  // (A) pending banks per kid
+  for (unsigned i = 0; i < m_config->nbk; i++) {
+    dram_req_t *r = bk[i]->mrq;
+    if (!r || !r->data || !r->data->has_kernel_uid()) continue;
+    kid_pending[r->data->get_kernel_uid()]++;
+  }
+
+  // (B) row-hit rw pending per kid
+  for (unsigned j = 0; j < m_config->nbk; j++) {
+    dram_req_t *r = bk[j]->mrq;
+    if (!r || !r->data || !r->data->has_kernel_uid()) continue;
+
+    const unsigned kid = r->data->get_kernel_uid();
+    const unsigned grp = get_bankgrp_number(j);
+
+    const bool rowhit_read =
+        (bk[j]->curr_row == r->row) && (r->rw == READ) &&
+        (bk[j]->state == BANK_ACTIVE);
+    const bool rowhit_write =
+        (bk[j]->curr_row == r->row) && (r->rw == WRITE) &&
+        (bk[j]->state == BANK_ACTIVE);
+
+    if (rowhit_read) {
+      kid_pending_rw[kid]++;
+      kid_read_blp_rw[kid]++;
+      if (grp < 64) kid_grp_mask[kid] |= (1ULL << grp);
+    } else if (rowhit_write) {
+      kid_pending_rw[kid]++;
+      kid_write_blp_rw[kid]++;
+      if (grp < 64) kid_grp_mask[kid] |= (1ULL << grp);
+    }
+  }
+
+  // (C) ready banks per kid
+  for (unsigned j = 0; j < m_config->nbk; j++) {
+    dram_req_t *r = bk[j]->mrq;
+    if (!r || !r->data || !r->data->has_kernel_uid()) continue;
+
+    const unsigned kid = r->data->get_kernel_uid();
+    const unsigned grp = get_bankgrp_number(j);
+
+    const bool ready =
+        ((!CCDc && !bk[j]->RCDc && !(bkgrp[grp]->CCDLc) &&
+          (bk[j]->curr_row == r->row) && (r->rw == READ) &&
+          (WTRc == 0) && (bk[j]->state == BANK_ACTIVE) && !rwq->full()) ||
+         (!CCDc && !bk[j]->RCDWRc && !(bkgrp[grp]->CCDLc) &&
+          (bk[j]->curr_row == r->row) && (r->rw == WRITE) &&
+          (RTWc == 0) && (bk[j]->state == BANK_ACTIVE) && !rwq->full()));
+
+    if (ready) kid_pending_ready[kid]++;
+  }
+
+  // (D) emit per-kid BLP increments
+  static constexpr unsigned long long kScale = 1000000ULL;
+
+  for (const auto &kv : kid_pending) {
+    const unsigned kid = kv.first;
+
+    const unsigned pending = kv.second;
+    const unsigned pending_rw =
+        (kid_pending_rw.count(kid) ? kid_pending_rw[kid] : 0);
+    const unsigned pending_ready =
+        (kid_pending_ready.count(kid) ? kid_pending_ready[kid] : 0);
+
+    const unsigned rb =
+        (kid_read_blp_rw.count(kid) ? kid_read_blp_rw[kid] : 0);
+    const unsigned wb =
+        (kid_write_blp_rw.count(kid) ? kid_write_blp_rw[kid] : 0);
+    const unsigned tot = rb + wb;
+
+    const unsigned long long inc_banks_1time = pending;
+    const unsigned long long inc_banks_access_total =
+        (pending > 0) ? 1ULL : 0ULL;
+
+    const unsigned long long inc_banks_time_rw = pending_rw;
+    const unsigned long long inc_banks_access_rw_total =
+        (pending_rw > 0) ? 1ULL : 0ULL;
+
+    const unsigned long long inc_banks_time_ready = pending_ready;
+    const unsigned long long inc_banks_access_ready_total =
+        (pending_ready > 0) ? 1ULL : 0ULL;
+
+    const unsigned long long inc_bkgrp =
+        (pending_rw > 0)
+            ? (unsigned long long)__builtin_popcountll(kid_grp_mask[kid])
+            : 0ULL;
+
+    unsigned long long inc_ratio_1e6 = 0ULL;
+    if (pending_rw > 0 && tot > 0) {
+      inc_ratio_1e6 =
+          ((unsigned long long)wb * kScale + (tot / 2)) / (unsigned long long)tot;
+    }
+
+    m_gpu->record_kernel_dram_blp_stats(
+        kid, id,
+        inc_banks_1time,
+        inc_banks_access_total,
+        inc_banks_time_rw,
+        inc_banks_access_rw_total,
+        inc_banks_time_ready,
+        inc_banks_access_ready_total,
+        inc_ratio_1e6,
+        inc_bkgrp);
+  }
+
+  // -----------------------------
+  // Issue commands
+  // -----------------------------
   bool issued_col_cmd = false;
   bool issued_row_cmd = false;
 
   if (m_config->dual_bus_interface) {
-    // dual bus interface
-    // issue one row command and one column command
     for (unsigned i = 0; i < m_config->nbk; i++) {
       unsigned j = (i + prio) % m_config->nbk;
       issued_col_cmd = issue_col_command(j);
@@ -427,15 +588,16 @@ void dram_t::cycle() {
             !bk[j]->RCc && !bk[j]->RPc && !bk[j]->RCDWRc)
           k--;
         bk[j]->n_idle++;
+        for (kernel_info_t *kinfo : m_gpu->get_running_kernels()) {
+          if (!kinfo) continue;
+          m_gpu->record_kernel_dram_bank_idle(kinfo->get_uid(), id, j, 1ULL);
+        }
       }
     }
   } else {
-    // single bus interface
-    // issue only one row/column command
     for (unsigned i = 0; i < m_config->nbk; i++) {
       unsigned j = (i + prio) % m_config->nbk;
       if (!issued_col_cmd) issued_col_cmd = issue_col_command(j);
-
       if (!issued_col_cmd && !issued_row_cmd)
         issued_row_cmd = issue_row_command(j);
 
@@ -444,11 +606,19 @@ void dram_t::cycle() {
             !bk[j]->RCc && !bk[j]->RPc && !bk[j]->RCDWRc)
           k--;
         bk[j]->n_idle++;
+        for (kernel_info_t *kinfo : m_gpu->get_running_kernels()) {
+          if (!kinfo) continue;
+          m_gpu->record_kernel_dram_bank_idle(kinfo->get_uid(), id, j, 1ULL);
+        }
       }
     }
   }
 
+  // -----------------------------
+  // Global counters (vanilla)
+  // -----------------------------
   issued = issued_row_cmd || issued_col_cmd;
+
   if (!issued) {
     n_nop++;
     n_nop_partial++;
@@ -462,6 +632,7 @@ void dram_t::cycle() {
   }
   n_cmd++;
   n_cmd_partial++;
+
   if (issued) {
     issued_total++;
     if (issued_col_cmd && issued_row_cmd) issued_two++;
@@ -469,9 +640,53 @@ void dram_t::cycle() {
   if (issued_col_cmd) issued_total_col++;
   if (issued_row_cmd) issued_total_row++;
 
-  // Collect some statistics
-  // check the limitation, see where BW is wasted?
-  /////////////////////////////////////////////////////////
+  // ==========================================================
+  // [KID] Classic-style per-kernel attribution:
+  // Every DRAM cycle counts for every *running* kernel.
+  // (Plus served_kid as a small safety net.)
+  // ==========================================================
+  auto add_unique = [](std::vector<unsigned> &kids, unsigned kid) {
+    if (!kid) return;
+    for (unsigned x : kids)
+      if (x == kid) return;
+    kids.push_back(kid);
+  };
+
+  std::vector<unsigned> active_kids;
+  active_kids.reserve(4);
+
+  for (kernel_info_t *kinfo : m_gpu->get_running_kernels()) {
+    if (!kinfo) continue;
+    add_unique(active_kids, kinfo->get_uid());
+  }
+  add_unique(active_kids, served_kid);
+
+  if (!active_kids.empty()) {
+    const unsigned long long inc_cmd = 1ULL;
+    const unsigned long long inc_nop = issued ? 0ULL : 1ULL;
+    const unsigned long long inc_activity = (k != 0) ? 1ULL : 0ULL;
+
+    const unsigned long long inc_row = issued_row_cmd ? 1ULL : 0ULL;
+    const unsigned long long inc_col = issued_col_cmd ? 1ULL : 0ULL;
+    const unsigned long long inc_total = issued ? 1ULL : 0ULL;
+    const unsigned long long inc_two =
+        (issued_row_cmd && issued_col_cmd) ? 1ULL : 0ULL;
+
+    for (unsigned kid : active_kids) {
+      m_gpu->record_kernel_dram_cycle_counters(kid, id, inc_cmd, inc_nop,
+                                               inc_activity);
+
+      // [KID] Dual-bus / issue stats + queue_avg numerator
+      m_gpu->record_kernel_dram_issue_stats(kid, id,
+                                            inc_row, inc_col, inc_total, inc_two,
+                                            this_nreqs);
+      m_gpu->record_kernel_dram_max_mrqs(kid, id, this_nreqs);
+    }
+  }
+
+  // -----------------------------
+  // Wasted/idle BW classification + bottlenecks
+  // -----------------------------
   unsigned int memory_pending_found = 0;
   for (unsigned i = 0; i < m_config->nbk; i++) {
     if (bk[i]->mrq) memory_pending_found++;
@@ -494,7 +709,8 @@ void dram_t::cycle() {
     wasted_bw_col++;
     for (unsigned j = 0; j < m_config->nbk; j++) {
       unsigned grp = get_bankgrp_number(j);
-      // read
+
+      // read row-hit
       if (bk[j]->mrq &&
           (((bk[j]->curr_row == bk[j]->mrq->row) && (bk[j]->mrq->rw == READ) &&
             (bk[j]->state == BANK_ACTIVE)))) {
@@ -505,8 +721,24 @@ void dram_t::cycle() {
         if (rwq->full()) rwq_limit++;
         if (bkgrp[grp]->CCDLc && !WTRc) CCDLc_limit_alone++;
         if (!bkgrp[grp]->CCDLc && WTRc) WTRc_limit_alone++;
+
+        if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+          const unsigned kid = bk[j]->mrq->data->get_kernel_uid();
+          m_gpu->record_kernel_dram_bw_bottlenecks(
+              kid, id,
+              bk[j]->RCDc ? 1ULL : 0ULL,
+              0ULL,
+              WTRc ? 1ULL : 0ULL,
+              0ULL,
+              bkgrp[grp]->CCDLc ? 1ULL : 0ULL,
+              rwq->full() ? 1ULL : 0ULL,
+              (bkgrp[grp]->CCDLc && !WTRc) ? 1ULL : 0ULL,
+              (!bkgrp[grp]->CCDLc && WTRc) ? 1ULL : 0ULL,
+              0ULL);
+        }
       }
-      // write
+
+      // write row-hit
       else if (bk[j]->mrq &&
                ((bk[j]->curr_row == bk[j]->mrq->row) &&
                 (bk[j]->mrq->rw == WRITE) && (bk[j]->state == BANK_ACTIVE))) {
@@ -517,6 +749,21 @@ void dram_t::cycle() {
         if (rwq->full()) rwq_limit++;
         if (bkgrp[grp]->CCDLc && !RTWc) CCDLc_limit_alone++;
         if (!bkgrp[grp]->CCDLc && RTWc) RTWc_limit_alone++;
+
+        if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+          const unsigned kid = bk[j]->mrq->data->get_kernel_uid();
+          m_gpu->record_kernel_dram_bw_bottlenecks(
+              kid, id,
+              0ULL,
+              bk[j]->RCDWRc ? 1ULL : 0ULL,
+              0ULL,
+              RTWc ? 1ULL : 0ULL,
+              bkgrp[grp]->CCDLc ? 1ULL : 0ULL,
+              rwq->full() ? 1ULL : 0ULL,
+              (bkgrp[grp]->CCDLc && !RTWc) ? 1ULL : 0ULL,
+              0ULL,
+              (!bkgrp[grp]->CCDLc && RTWc) ? 1ULL : 0ULL);
+        }
       }
     }
   } else if (memory_pending_found)
@@ -526,9 +773,25 @@ void dram_t::cycle() {
   else
     assert(1);
 
-  /////////////////////////////////////////////////////////
+  // [KID] per-kernel BW classification (classic-style)
+  const unsigned long long inc_util = (issued_col_cmd || CCDc) ? 1ULL : 0ULL;
+  const unsigned long long inc_wcol =
+      (!inc_util && memory_pending_rw_found) ? 1ULL : 0ULL;
+  const unsigned long long inc_wrow =
+      (!inc_util && !memory_pending_rw_found && memory_pending_found) ? 1ULL : 0ULL;
+  const unsigned long long inc_idle =
+      (!inc_util && !memory_pending_rw_found && !memory_pending_found) ? 1ULL : 0ULL;
 
-  // decrements counters once for each time dram_issueCMD is called
+  if (!active_kids.empty()) {
+    for (unsigned kid : active_kids) {
+      m_gpu->record_kernel_dram_bw_class(kid, id, inc_util, inc_wcol, inc_wrow,
+                                         inc_idle);
+    }
+  }
+
+  // -----------------------------
+  // Decrement counters
+  // -----------------------------
   DEC2ZERO(RRDc);
   DEC2ZERO(CCDc);
   DEC2ZERO(RTWc);
@@ -578,11 +841,32 @@ bool dram_t::issue_col_command(int j) {
         n_rd_L2_A++;
       else
         n_rd++;
-
+      // [KID] per-kernel RD counters
+      if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+        const unsigned kid = bk[j]->mrq->data->get_kernel_uid();
+        const bool is_l2a = (bk[j]->mrq->data->get_access_type() == L2_WR_ALLOC_R);
+        m_gpu->record_kernel_dram_rw_counters(
+            kid, id,
+            is_l2a ? 0ULL : 1ULL,   // inc_rd
+            is_l2a ? 1ULL : 0ULL,   // inc_rd_L2_A
+            0ULL,                   // inc_wr
+            0ULL);                  // inc_wr_WB
+      }
       bwutil += m_config->BL / m_config->data_command_freq_ratio;
       bwutil_partial += m_config->BL / m_config->data_command_freq_ratio;
-      bk[j]->n_access++;
+      const unsigned long long inc_bw =
+          (unsigned long long)(m_config->BL / m_config->data_command_freq_ratio);
 
+      // [KID] per-kernel bwutil
+      if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+        m_gpu->record_kernel_dram_bwutil(bk[j]->mrq->data->get_kernel_uid(), id, inc_bw);
+      }
+      bk[j]->n_access++;
+      // [KID] per-kernel bank access (READ)
+      if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+        m_gpu->record_kernel_dram_bank_access(bk[j]->mrq->data->get_kernel_uid(),
+                                              id, j, 1ULL);
+      }
 #ifdef DRAM_VERIFY
       PRINT_CYCLE = 1;
       printf("\tRD  Bk:%d Row:%03x Col:%03x \n", j, bk[j]->curr_row,
@@ -614,8 +898,26 @@ bool dram_t::issue_col_command(int j) {
           n_wr_WB++;
         else
           n_wr++;
+        // [KID] per-kernel WR counters
+        if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+          const unsigned kid = bk[j]->mrq->data->get_kernel_uid();
+          const bool is_wb = (bk[j]->mrq->data->get_access_type() == L2_WRBK_ACC);
+          m_gpu->record_kernel_dram_rw_counters(
+              kid, id,
+              0ULL,                   // inc_rd
+              0ULL,                   // inc_rd_L2_A
+              is_wb ? 0ULL : 1ULL,     // inc_wr
+              is_wb ? 1ULL : 0ULL);    // inc_wr_WB
+        }
         bwutil += m_config->BL / m_config->data_command_freq_ratio;
         bwutil_partial += m_config->BL / m_config->data_command_freq_ratio;
+        const unsigned long long inc_bw =
+            (unsigned long long)(m_config->BL / m_config->data_command_freq_ratio);
+
+        // [KID] per-kernel bwutil
+        if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+          m_gpu->record_kernel_dram_bwutil(bk[j]->mrq->data->get_kernel_uid(), id, inc_bw);
+        }
 #ifdef DRAM_VERIFY
         PRINT_CYCLE = 1;
         printf(
@@ -659,6 +961,10 @@ bool dram_t::issue_row_command(int j) {
       issued = true;
       n_act_partial++;
       n_act++;
+      if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+        m_gpu->record_kernel_dram_row_cmd_counters(
+            bk[j]->mrq->data->get_kernel_uid(), id, 1ULL, 0ULL);
+      }
     }
 
     else
@@ -673,6 +979,11 @@ bool dram_t::issue_row_command(int j) {
         prio = (j + 1) % m_config->nbk;
         issued = true;
         n_pre++;
+        // [KID] Per-kernel DRAM PRE command attribution
+        if (bk[j]->mrq && bk[j]->mrq->data && bk[j]->mrq->data->has_kernel_uid()) {
+          m_gpu->record_kernel_dram_row_cmd_counters(
+              bk[j]->mrq->data->get_kernel_uid(), id, 0ULL, 1ULL);
+        }
         n_pre_partial++;
 #ifdef DRAM_VERIFY
         PRINT_CYCLE = 1;
@@ -778,6 +1089,183 @@ void dram_t::print(FILE *simFile) const {
     fprintf(simFile, "mrqq: max=%d avg=%g\n", max_mrqs,
             (float)ave_mrqs / n_cmd);
 }
+
+void dram_t::print(FILE *simFile, unsigned kid, const kernel_stats_view_t *view) const {
+  unsigned i;
+
+  auto vget = [&](const unsigned long long *p) -> unsigned long long {
+    return (p ? p[id] : 0ULL);
+  };
+
+  // Safe loads (0 if pointer missing)
+  const unsigned long long k_cmd      = view ? vget(view->dram_n_cmd)      : 0ULL;
+  const unsigned long long k_nop      = view ? vget(view->dram_n_nop)      : 0ULL;
+  const unsigned long long k_act_cmd  = view ? vget(view->dram_n_act)      : 0ULL;
+  const unsigned long long k_pre_cmd  = view ? vget(view->dram_n_pre)      : 0ULL;
+  const unsigned long long k_ref      = view ? vget(view->dram_n_ref_event): 0ULL;
+  const unsigned long long k_req      = view ? vget(view->dram_n_req)      : 0ULL;
+
+  const unsigned long long k_rd       = view ? vget(view->dram_n_rd)       : 0ULL;
+  const unsigned long long k_rd_l2a   = view ? vget(view->dram_n_rd_L2_A)  : 0ULL;
+  const unsigned long long k_wr       = view ? vget(view->dram_n_wr)       : 0ULL;
+  const unsigned long long k_wr_wb    = view ? vget(view->dram_n_wr_WB)    : 0ULL;
+
+  const unsigned long long k_bwutil   = view ? vget(view->dram_bwutil)     : 0ULL;
+  const unsigned long long k_activity = view ? vget(view->dram_n_activity) : 0ULL;
+
+  const float k_bw_util = (k_cmd ? (float)k_bwutil / (float)k_cmd : 0.0f);
+  const float k_dram_eff = (k_activity ? (float)k_bwutil / (float)k_activity : 0.0f);
+
+  fprintf(simFile, "DRAM[%d]: %d bks, busW=%d BL=%d CL=%d, ", id, m_config->nbk,
+          m_config->busW, m_config->BL, m_config->CL);
+  fprintf(simFile, "tRRD=%d tCCD=%d, tRCD=%d tRAS=%d tRP=%d tRC=%d\n",
+          m_config->tRRD, m_config->tCCD, m_config->tRCD, m_config->tRAS,
+          m_config->tRP, m_config->tRC);
+
+  fprintf(simFile,
+          "n_cmd=%llu n_nop=%llu n_act=%llu n_pre=%llu n_ref_event=%llu n_req=%llu "
+          "n_rd=%llu n_rd_L2_A=%llu n_write=%llu n_wr_bk=%llu bw_util=%.4g\n",
+          k_cmd, k_nop, k_act_cmd, k_pre_cmd, k_ref, k_req,
+          k_rd, k_rd_l2a, k_wr, k_wr_wb, k_bw_util);
+
+  fprintf(simFile, "n_activity=%llu dram_eff=%.4g\n", k_activity, k_dram_eff);
+
+  auto vget2d = [&](const unsigned long long *p, unsigned bank) -> unsigned long long {
+    if (!p) return 0ULL;
+    const unsigned idx = id * m_config->nbk + bank;  // dram_id * nbk + bank
+    return p[idx];
+  };
+
+  for (i = 0; i < m_config->nbk; i++) {
+    const unsigned long long k_acc  = view ? vget2d(view->dram_bk_n_access, i) : 0ULL;
+    const unsigned long long k_idle = view ? vget2d(view->dram_bk_n_idle,   i) : 0ULL;
+    fprintf(simFile, "bk%d: %llua %llui ", i, k_acc, k_idle);
+  }
+  fprintf(simFile, "\n");
+  fprintf(simFile,
+          "\n------------------------------------------------------------------"
+          "------\n");
+
+  auto v1 = [&](const unsigned long long *p) -> unsigned long long {
+    return p ? p[id] : 0ULL;
+  };
+
+  auto safe_div = [&](double num, double den) -> double {
+    return (den > 0.0) ? (num / den) : 0.0;
+  };
+
+  static constexpr double kScaleD = 1000000.0;
+  const double row_loc      = safe_div((double)v1(view->dram_hits_num),      (double)v1(view->dram_access_num));
+  const double row_loc_r    = safe_div((double)v1(view->dram_hits_read_num), (double)v1(view->dram_read_num));
+  const double row_loc_w    = safe_div((double)v1(view->dram_hits_write_num),(double)v1(view->dram_write_num));
+
+  const double blp          = safe_div((double)v1(view->dram_banks_1time),        (double)v1(view->dram_banks_access_total));
+  const double blp_col      = safe_div((double)v1(view->dram_banks_time_rw),      (double)v1(view->dram_banks_access_rw_total));
+  const double blp_ready    = safe_div((double)v1(view->dram_banks_time_ready),   (double)v1(view->dram_banks_access_ready_total));
+
+  const double w2r_sum      = (double)v1(view->dram_w2r_ratio_sum_1e6) / kScaleD;
+  const double w2r_avg      = safe_div(w2r_sum, (double)v1(view->dram_banks_access_rw_total));
+
+  const double grp_para     = safe_div((double)v1(view->dram_bkgrp_parallsim_rw),
+                                      (double)v1(view->dram_banks_access_rw_total));
+
+  printf("\nRow_Buffer_Locality = %.6f", row_loc);
+  printf("\nRow_Buffer_Locality_read = %.6f", row_loc_r);
+  printf("\nRow_Buffer_Locality_write = %.6f", row_loc_w);
+
+  printf("\nBank_Level_Parallism = %.6f", blp);
+  printf("\nBank_Level_Parallism_Col = %.6f", blp_col);
+  printf("\nBank_Level_Parallism_Ready = %.6f", blp_ready);
+  printf("\nwrite_to_read_ratio_blp_rw_average = %.6f", w2r_avg);
+  printf("\nGrpLevelPara = %.6f \n", grp_para);
+
+  printf("\nBW Util details:\n");
+
+  const unsigned long long k_util   = vget(view->dram_util_bw);
+  const unsigned long long k_wcol   = vget(view->dram_wasted_bw_col);
+  const unsigned long long k_wrow   = vget(view->dram_wasted_bw_row);
+  const unsigned long long k_idle   = vget(view->dram_idle_bw);
+
+  const double k_bw_ratio = (k_cmd ? (double)k_bwutil / (double)k_cmd : 0.0);
+
+  printf("bwutil = %.6f \n", k_bw_ratio);
+  printf("total_CMD = %llu \n", k_cmd);
+  printf("util_bw = %llu \n", k_util);
+  printf("Wasted_Col = %llu \n", k_wcol);
+  printf("Wasted_Row = %llu \n", k_wrow);
+  printf("Idle = %llu \n", k_idle);
+
+  printf("\nBW Util Bottlenecks: \n");
+  printf("RCDc_limit = %llu \n", vget(view->dram_RCDc_limit));
+  printf("RCDWRc_limit = %llu \n", vget(view->dram_RCDWRc_limit));
+  printf("WTRc_limit = %llu \n", vget(view->dram_WTRc_limit));
+  printf("RTWc_limit = %llu \n", vget(view->dram_RTWc_limit));
+  printf("CCDLc_limit = %llu \n", vget(view->dram_CCDLc_limit));
+  printf("rwq = %llu \n", vget(view->dram_rwq_limit));
+  printf("CCDLc_limit_alone = %llu \n", vget(view->dram_CCDLc_limit_alone));
+  printf("WTRc_limit_alone = %llu \n", vget(view->dram_WTRc_limit_alone));
+  printf("RTWc_limit_alone = %llu \n", vget(view->dram_RTWc_limit_alone));
+  printf("\nCommands details: \n");
+  printf("total_CMD = %llu \n", vget(view->dram_n_cmd));
+  printf("n_nop = %llu \n", vget(view->dram_n_nop));
+  printf("Read = %llu \n", vget(view->dram_n_rd));
+  printf("Write = %llu \n", vget(view->dram_n_wr));
+  printf("L2_Alloc = %llu \n", vget(view->dram_n_rd_L2_A));
+  printf("L2_WB = %llu \n", vget(view->dram_n_wr_WB));
+  printf("n_act = %llu \n", vget(view->dram_n_act));
+  printf("n_pre = %llu \n", vget(view->dram_n_pre));
+  printf("n_ref = %llu \n", vget(view->dram_n_ref_event));  \
+  printf("n_req = %llu \n", vget(view->dram_n_req));
+  printf("total_req = %llu \n",
+        vget(view->dram_n_rd) + vget(view->dram_n_wr) +
+        vget(view->dram_n_rd_L2_A) + vget(view->dram_n_wr_WB));
+
+
+  printf("\nDual Bus Interface Util: \n");
+  printf("issued_total_row = %llu \n", vget(view->dram_issued_total_row));
+  printf("issued_total_col = %llu \n", vget(view->dram_issued_total_col));
+
+  printf("Row_Bus_Util =  %.6f \n",
+        vget(view->dram_n_cmd) ? (float)vget(view->dram_issued_total_row) / (float)vget(view->dram_n_cmd) : 0.0f);
+
+  printf("CoL_Bus_Util = %.6f \n",
+        vget(view->dram_n_cmd) ? (float)vget(view->dram_issued_total_col) / (float)vget(view->dram_n_cmd) : 0.0f);
+
+  printf("Either_Row_CoL_Bus_Util = %.6f \n",
+        vget(view->dram_n_cmd) ? (float)vget(view->dram_issued_total) / (float)vget(view->dram_n_cmd) : 0.0f);
+
+  printf("Issued_on_Two_Bus_Simul_Util = %.6f \n",
+        vget(view->dram_n_cmd) ? (float)vget(view->dram_issued_two) / (float)vget(view->dram_n_cmd) : 0.0f);
+
+  printf("issued_two_Eff = %.6f \n",
+        vget(view->dram_issued_total) ? (float)vget(view->dram_issued_two) / (float)vget(view->dram_issued_total) : 0.0f);
+
+  printf("queue_avg = %.6f \n\n",
+        vget(view->dram_n_cmd) ? (float)vget(view->dram_ave_mrqs_sum) / (float)vget(view->dram_n_cmd) : 0.0f);
+
+  fprintf(simFile, "\n");
+  fprintf(simFile, "dram_util_bins:");
+  for (i = 0; i < 10; i++)
+    fprintf(simFile, " %llu",
+            (view && view->dram_util_bins) ? view->dram_util_bins[id * 10 + i]
+                                          : 0ULL);
+
+  fprintf(simFile, "\ndram_eff_bins:");
+  for (i = 0; i < 10; i++)
+    fprintf(simFile, " %llu",
+            (view && view->dram_eff_bins) ? view->dram_eff_bins[id * 10 + i]
+                                          : 0ULL);
+
+  fprintf(simFile, "\n");
+
+  if (m_config->scheduler_type == DRAM_FRFCFS)
+    fprintf(simFile, "mrqq: max=%llu avg=%g\n",
+            (view && view->dram_max_mrqs) ? view->dram_max_mrqs[id] : 0ULL,
+            (view && view->dram_n_cmd && view->dram_ave_mrqs_sum && view->dram_n_cmd[id])
+                ? (double)view->dram_ave_mrqs_sum[id] / (double)view->dram_n_cmd[id]
+                : 0.0);
+}
+
 
 void dram_t::visualize() const {
   printf("RRDc=%d CCDc=%d mrqq.Length=%d rwq.Length=%d\n", RRDc, CCDc,

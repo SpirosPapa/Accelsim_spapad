@@ -1,7 +1,7 @@
 #include "traffic_breakdown.h"
 #include "mem_fetch.h"
 
-void traffic_breakdown::print(FILE* fout) {
+void traffic_breakdown::print(FILE* fout) const{
   for (traffic_stat_t::const_iterator i_stat = m_stats.begin();
        i_stat != m_stats.end(); i_stat++) {
     unsigned int byte_transferred = 0;

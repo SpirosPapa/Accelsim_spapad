@@ -361,15 +361,20 @@ enum cache_request_status tag_array::access(new_addr_type addr, unsigned time,
       if (m_config.m_alloc_policy == ON_MISS) {
         if (m_lines[idx]->is_modified_line()) {
           wb = true;
-          // m_lines[idx]->set_byte_mask(mf);
+
+          unsigned victim_kid = m_lines[idx]->get_last_kernel_uid();  
+
           evicted.set_info(m_lines[idx]->m_block_addr,
-                           m_lines[idx]->get_modified_size(),
-                           m_lines[idx]->get_dirty_byte_mask(),
-                           m_lines[idx]->get_dirty_sector_mask());
+                          m_lines[idx]->get_modified_size(),
+                          m_lines[idx]->get_dirty_byte_mask(),
+                          m_lines[idx]->get_dirty_sector_mask(),
+                          victim_kid);                              
+
           m_dirty--;
         }
         m_lines[idx]->allocate(m_config.tag(addr), m_config.block_addr(addr),
                                time, mf->get_access_sector_mask());
+        m_lines[idx]->set_last_kernel_uid(0);
       }
       break;
     case SECTOR_MISS:
@@ -422,6 +427,7 @@ void tag_array::fill(new_addr_type addr, unsigned time,
   if (status == MISS) {
     m_lines[idx]->allocate(m_config.tag(addr), m_config.block_addr(addr), time,
                            mask);
+    m_lines[idx]->set_last_kernel_uid(0);
   } else if (status == SECTOR_MISS) {
     assert(m_config.m_cache_type == SECTOR);
     ((sector_cache_block *)m_lines[idx])->allocate_sector(time, mask);
@@ -434,6 +440,11 @@ void tag_array::fill(new_addr_type addr, unsigned time,
   if (m_lines[idx]->is_modified_line() && !before) {
     m_dirty++;
   }
+  m_lines[idx]->fill(time, mask, byte_mask);
+  if (m_lines[idx]->is_modified_line() && !before) {
+    m_dirty++;
+  }
+
 }
 
 void tag_array::fill(unsigned index, unsigned time, mem_fetch *mf) {
@@ -443,6 +454,9 @@ void tag_array::fill(unsigned index, unsigned time, mem_fetch *mf) {
                        mf->get_access_byte_mask());
   if (m_lines[index]->is_modified_line() && !before) {
     m_dirty++;
+  }
+  if (mf && mf->has_kernel_uid()) {
+      m_lines[index]->set_last_kernel_uid(mf->get_kernel_uid());
   }
 }
 
@@ -631,6 +645,34 @@ void mshr_table::display(FILE *fp) const {
     }
   }
 }
+
+void mshr_table::display(FILE *fp, unsigned kid) const {
+  fprintf(fp, "MSHR contents (kid=%u)\n", kid);
+
+  for (auto e = m_data.begin(); e != m_data.end(); ++e) {
+    unsigned block_addr = e->first;
+    const auto &entry = e->second;
+
+    size_t kid_cnt = 0;
+    for (auto mf : entry.m_list)
+      if (mf && mf->has_kernel_uid() && mf->get_kernel_uid() == kid) kid_cnt++;
+
+    if (kid_cnt == 0) continue;
+
+    fprintf(fp, "MSHR: tag=0x%06x, atomic=%d %zu/%zu entries :\n",
+            block_addr, entry.m_has_atomic, kid_cnt, entry.m_list.size());
+
+    for (auto mf : entry.m_list) {
+      if (!mf) continue;
+      if (!mf->has_kernel_uid()) continue;
+      if (mf->get_kernel_uid() != kid) continue;
+      fprintf(fp, "  %p : ", mf);
+      mf->print(fp);
+    }
+  }
+}
+
+
 /***************************************************************** Caches
  * *****************************************************************/
 cache_stats::cache_stats() {
@@ -1321,6 +1363,12 @@ void baseline_cache::display_state(FILE *fp) const {
   fprintf(fp, "\n");
 }
 
+void baseline_cache::display_state(FILE *fp, unsigned kid) const {
+  fprintf(fp, "Cache %s (kid=%u):\n", m_name.c_str(), kid);
+  m_mshrs.display(fp, kid);
+  fprintf(fp, "\n");
+}
+
 void baseline_cache::inc_aggregated_stats(cache_request_status status,
                                           cache_request_status cache_status,
                                           mem_fetch *mf,
@@ -1469,6 +1517,7 @@ cache_request_status data_cache::wr_hit_wb(new_addr_type addr,
   }
   block->set_status(MODIFIED, mf->get_access_sector_mask());
   block->set_byte_mask(mf);
+  if (mf->has_kernel_uid()) block->set_last_kernel_uid(mf->get_kernel_uid());
   update_m_readable(mf, cache_index);
 
   return HIT;
@@ -1494,6 +1543,7 @@ cache_request_status data_cache::wr_hit_wt(new_addr_type addr,
   }
   block->set_status(MODIFIED, mf->get_access_sector_mask());
   block->set_byte_mask(mf);
+  if (mf->has_kernel_uid()) block->set_last_kernel_uid(mf->get_kernel_uid());
   update_m_readable(mf, cache_index);
 
   // generate a write-through
@@ -1620,6 +1670,10 @@ enum cache_request_status data_cache::wr_miss_wa_naive(
       // used, so set the right chip address from the original mf
       wb->set_chip(mf->get_tlx_addr().chip);
       wb->set_partition(mf->get_tlx_addr().sub_partition);
+      // MY ADDITION
+      if (evicted.m_last_kernel_uid != 0) {
+        wb->set_kernel_uid(evicted.m_last_kernel_uid);
+      }
       send_write_request(wb, cache_event(WRITE_BACK_REQUEST_SENT, evicted),
                          time, events);
     }
@@ -1658,6 +1712,7 @@ enum cache_request_status data_cache::wr_miss_wa_fetch_on_write(
     }
     block->set_status(MODIFIED, mf->get_access_sector_mask());
     block->set_byte_mask(mf);
+    if (mf->has_kernel_uid()) block->set_last_kernel_uid(mf->get_kernel_uid());
     if (status == HIT_RESERVED)
       block->set_ignore_on_fill(true, mf->get_access_sector_mask());
 
@@ -1674,6 +1729,9 @@ enum cache_request_status data_cache::wr_miss_wa_fetch_on_write(
         // used, so set the right chip address from the original mf
         wb->set_chip(mf->get_tlx_addr().chip);
         wb->set_partition(mf->get_tlx_addr().sub_partition);
+        if (evicted.m_last_kernel_uid != 0) {
+          wb->set_kernel_uid(evicted.m_last_kernel_uid);
+        }
         send_write_request(wb, cache_event(WRITE_BACK_REQUEST_SENT, evicted),
                            time, events);
       }
@@ -1755,6 +1813,10 @@ enum cache_request_status data_cache::wr_miss_wa_fetch_on_write(
         // used, so set the right chip address from the original mf
         wb->set_chip(mf->get_tlx_addr().chip);
         wb->set_partition(mf->get_tlx_addr().sub_partition);
+        if (evicted.m_last_kernel_uid != 0) {
+        wb->set_kernel_uid(evicted.m_last_kernel_uid);
+        }
+
         send_write_request(wb, cache_event(WRITE_BACK_REQUEST_SENT, evicted),
                            time, events);
       }
@@ -1823,6 +1885,9 @@ enum cache_request_status data_cache::wr_miss_wa_lazy_fetch_on_read(
       // used, so set the right chip address from the original mf
       wb->set_chip(mf->get_tlx_addr().chip);
       wb->set_partition(mf->get_tlx_addr().sub_partition);
+      if (evicted.m_last_kernel_uid != 0) {
+        wb->set_kernel_uid(evicted.m_last_kernel_uid);
+      }      
       send_write_request(wb, cache_event(WRITE_BACK_REQUEST_SENT, evicted),
                          time, events);
     }
@@ -1907,6 +1972,9 @@ enum cache_request_status data_cache::rd_miss_base(
       // used, so set the right chip address from the original mf
       wb->set_chip(mf->get_tlx_addr().chip);
       wb->set_partition(mf->get_tlx_addr().sub_partition);
+      if (evicted.m_last_kernel_uid != 0) {
+        wb->set_kernel_uid(evicted.m_last_kernel_uid);
+      }
       send_write_request(wb, WRITE_BACK_REQUEST_SENT, time, events);
     }
     return MISS;

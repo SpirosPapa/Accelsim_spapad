@@ -67,6 +67,8 @@ frfcfs_scheduler::frfcfs_scheduler(const memory_config *config, dram_t *dm,
     }
   }
   m_mode = READ_MODE;
+  //[ADDED]
+  m_episode_kid_accesses.resize(m_config->nbk);
 }
 
 void frfcfs_scheduler::add_req(dram_req_t *req) {
@@ -85,26 +87,54 @@ void frfcfs_scheduler::add_req(dram_req_t *req) {
     m_bins[req->bk][req->row].push_front(ptr);  // newest reqs to the front
   }
 }
-
 void frfcfs_scheduler::data_collection(unsigned int bank) {
-  if (m_dram->m_gpu->gpu_sim_cycle > row_service_timestamp[bank]) {
-    curr_row_service_time[bank] =
-        m_dram->m_gpu->gpu_sim_cycle - row_service_timestamp[bank];
-    if (curr_row_service_time[bank] >
-        m_stats->max_servicetime2samerow[m_dram->id][bank])
-      m_stats->max_servicetime2samerow[m_dram->id][bank] =
-          curr_row_service_time[bank];
+  // Bootstrap guard:
+  // row_service_timestamp[bank] starts at 0, so the very first
+  // "episode_srv" would become gpu_sim_cycle - 0, which is NOT
+  // a real row episode (just time since sim start).
+  unsigned episode_srv = 0;
+  bool valid_episode = (row_service_timestamp[bank] != 0);
+
+  if (valid_episode && m_dram->m_gpu->gpu_sim_cycle > row_service_timestamp[bank]) {
+    episode_srv = m_dram->m_gpu->gpu_sim_cycle - row_service_timestamp[bank];
+
+    if (episode_srv > m_stats->max_servicetime2samerow[m_dram->id][bank])
+      m_stats->max_servicetime2samerow[m_dram->id][bank] = episode_srv;
   }
+
   curr_row_service_time[bank] = 0;
   row_service_timestamp[bank] = m_dram->m_gpu->gpu_sim_cycle;
+
   if (m_stats->concurrent_row_access[m_dram->id][bank] >
       m_stats->max_conc_access2samerow[m_dram->id][bank]) {
     m_stats->max_conc_access2samerow[m_dram->id][bank] =
         m_stats->concurrent_row_access[m_dram->id][bank];
   }
+
   m_stats->concurrent_row_access[m_dram->id][bank] = 0;
   m_stats->num_activates[m_dram->id][bank]++;
+
+  // [ADDED] flush per-kernel episode contributions
+  auto &mp = m_episode_kid_accesses[bank];
+  if (!mp.empty()) {
+    for (auto &kv : mp) {
+      unsigned kid = kv.first;
+      unsigned cnt = kv.second;
+
+      m_dram->m_gpu->record_kernel_row_episode_access(kid, m_dram->id, bank, cnt);
+
+      // Only record service time if it was a valid real episode
+      if (valid_episode && episode_srv) {
+        m_dram->m_gpu->record_kernel_row_episode_servicetime(
+            kid, m_dram->id, bank, episode_srv);
+      }
+
+     // m_dram->m_gpu->record_kernel_row_locality_episode(kid, m_dram->id, bank, cnt);
+    }
+    mp.clear();
+  }
 }
+
 
 dram_req_t *frfcfs_scheduler::schedule(unsigned bank, unsigned curr_row) {
   // row
@@ -115,16 +145,13 @@ dram_req_t *frfcfs_scheduler::schedule(unsigned bank, unsigned curr_row) {
   std::list<std::list<dram_req_t *>::iterator> **m_current_last_row =
       m_last_row;
 
+  // ---------------- write-queue mode switching ----------------
   if (m_config->seperate_write_queue_enabled) {
     if (m_mode == READ_MODE &&
-        ((m_num_write_pending >= m_config->write_high_watermark)
-         // || (m_queue[bank].empty() && !m_write_queue[bank].empty())
-         )) {
+        (m_num_write_pending >= m_config->write_high_watermark)) {
       m_mode = WRITE_MODE;
     } else if (m_mode == WRITE_MODE &&
-               ((m_num_write_pending < m_config->write_low_watermark)
-                //  || (!m_queue[bank].empty() && m_write_queue[bank].empty())
-                )) {
+               (m_num_write_pending < m_config->write_low_watermark)) {
       m_mode = READ_MODE;
     }
   }
@@ -135,29 +162,61 @@ dram_req_t *frfcfs_scheduler::schedule(unsigned bank, unsigned curr_row) {
     m_current_last_row = m_last_write_row;
   }
 
+  // ---------------- pick/maintain current row bin ----------------
   if (m_current_last_row[bank] == NULL) {
     if (m_current_queue[bank].empty()) return NULL;
 
     std::map<unsigned, std::list<std::list<dram_req_t *>::iterator> >::iterator
         bin_ptr = m_current_bins[bank].find(curr_row);
+
     if (bin_ptr == m_current_bins[bank].end()) {
-      dram_req_t *req = m_current_queue[bank].back();
-      bin_ptr = m_current_bins[bank].find(req->row);
-      assert(bin_ptr !=
-             m_current_bins[bank].end());  // where did the request go???
+      // No requests for "curr_row" -> switch to the row of the oldest request
+      dram_req_t *tmp = m_current_queue[bank].back();
+      bin_ptr = m_current_bins[bank].find(tmp->row);
+      assert(bin_ptr != m_current_bins[bank].end());  // where did the request go???
+
       m_current_last_row[bank] = &(bin_ptr->second);
+
+      // Row episode ended, collect stats and start a new episode
       data_collection(bank);
       rowhit = false;
     } else {
+      // Continue on current row
       m_current_last_row[bank] = &(bin_ptr->second);
       rowhit = true;
     }
   }
+
+  // ---------------- choose next request ----------------
   std::list<dram_req_t *>::iterator next = m_current_last_row[bank]->back();
   dram_req_t *req = (*next);
 
-  // rowblp stats
+  // ---------------- per-kernel attribution ----------------
+  unsigned kid = 0;
+  mem_fetch *mf = nullptr;
+  if (req && req->data) {
+    mf = req->data;
+    if (mf->has_kernel_uid()) kid = mf->get_kernel_uid();
+  }
+
+  // Keep episode accounting for max_conc / servicetime flush in data_collection()
+  if (kid) {
+    m_episode_kid_accesses[bank][kid]++;  // +1 per scheduled request in this row-episode
+  }
+
+  // Per-kernel locality EXACTLY like vanilla:
+  // - row_access++ for every scheduled request
+  // - num_activates++ when a new row episode starts (rowhit == false)
+  if (kid) {
+    m_dram->m_gpu->record_kernel_row_access(kid, m_dram->id, bank);
+    if (!rowhit) {
+      m_dram->m_gpu->record_kernel_row_activate(kid, m_dram->id, bank);
+    }
+  }
+
+  // ---------------- rowblp stats (global/vanilla) ----------------
   m_dram->access_num++;
+
   bool is_write = req->data->is_write();
   if (is_write)
     m_dram->write_num++;
@@ -174,19 +233,23 @@ dram_req_t *frfcfs_scheduler::schedule(unsigned bank, unsigned curr_row) {
 
   m_stats->concurrent_row_access[m_dram->id][bank]++;
   m_stats->row_access[m_dram->id][bank]++;
-  m_current_last_row[bank]->pop_back();
 
+  // ---------------- remove chosen request from structures ----------------
+  m_current_last_row[bank]->pop_back();
   m_current_queue[bank].erase(next);
+
   if (m_current_last_row[bank]->empty()) {
     m_current_bins[bank].erase(req->row);
     m_current_last_row[bank] = NULL;
   }
+
 #ifdef DEBUG_FAST_IDEAL_SCHED
   if (req)
     printf("%08u : DRAM(%u) scheduling memory request to bank=%u, row=%u\n",
            (unsigned)gpu_sim_cycle, m_dram->id, req->bk, req->row);
 #endif
 
+  // ---------------- update pending counters ----------------
   if (m_config->seperate_write_queue_enabled && req->data->is_write()) {
     assert(req != NULL && m_num_write_pending != 0);
     m_num_write_pending--;
@@ -245,10 +308,18 @@ void dram_t::scheduler_frfcfs() {
           m_stats->tot_mrq_num++;
           bk[b]->mrq->timestamp =
               m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle;
+          mem_fetch *mf = req->data;
           m_stats->mrq_lat_table[LOGB2(mrq_latency)]++;
+          //MY ADDITION
+          if (mf && mf->has_kernel_uid()) {
+            m_gpu->record_kernel_mrq_lat_bucket(mf->get_kernel_uid(), mrq_latency);
+          }
+          //
           if (mrq_latency > m_stats->max_mrq_latency) {
             m_stats->max_mrq_latency = mrq_latency;
           }
+          // my addition
+          if (mf) mf->set_mrq_latency(mrq_latency);
         }
 
         break;

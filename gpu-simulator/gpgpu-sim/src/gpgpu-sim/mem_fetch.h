@@ -83,6 +83,16 @@ class mem_fetch {
     m_raw_addr.sub_partition = sub_partition_id;
   }
 
+  // =============================
+  // MY ADDITION
+  // =============================
+  void set_icnt2mem_latency(unsigned v) { m_icnt2mem_latency = v; }
+  unsigned get_icnt2mem_latency() const { return m_icnt2mem_latency; }
+
+  void set_mrq_latency(unsigned v) { m_mrq_latency = v; }
+  unsigned get_mrq_latency() const { return m_mrq_latency; }
+
+
   // static constexpr unsigned kInvalidKernelUid =
   //     std::numeric_limits<unsigned>::max();
 
@@ -146,6 +156,11 @@ class mem_fetch {
 
  private:
   // request source information
+  // =============================
+  // MY ADDITION
+  // =============================
+  unsigned m_icnt2mem_latency = 0;  // request ICNT traversal latency (core->mem)
+  unsigned m_mrq_latency      = 0;  // DRAM scheduler queue latency
 
 
   unsigned m_request_uid;

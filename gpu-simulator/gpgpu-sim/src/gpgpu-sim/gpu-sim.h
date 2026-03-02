@@ -225,8 +225,12 @@ struct cache_cnt_t {
   unsigned long long pending_hit = 0;
   unsigned long long resfail = 0;
 };
+class traffic_breakdown;
 
 struct kernel_stats_accum_t {
+    kernel_stats_accum_t()
+      : outgoing_traffic("core_to_mem"),
+        incoming_traffic("mem_to_core") {}
   // core execution
   unsigned long long sim_cycle   = 0;
   unsigned long long sim_insn    = 0;
@@ -246,7 +250,6 @@ struct kernel_stats_accum_t {
 
   std::vector<cache_cnt_t> l1i_sm, l1d_sm, l1c_sm, l1t_sm;
 
-  // ---- per kernel shader stats counters ----
   unsigned long long thrd_icount = 0;   //  gpgpu_n_tot_thrd_icount
   unsigned long long warp_icount = 0;   //  gpgpu_n_tot_w_icount
 
@@ -268,12 +271,132 @@ struct kernel_stats_accum_t {
 
   std::vector<unsigned long long> shader_cycle_distro; 
 
-  // issue stats
   std::vector<unsigned long long> single_issue_nums; 
   std::vector<unsigned long long> dual_issue_nums;   
 
-};
+  unsigned long long gpgpu_n_stall_shd_mem = 0;
 
+  unsigned long long gpgpu_n_shmem_bkconflict = 0;
+  unsigned long long gpgpu_n_l1cache_bkconflict = 0;
+  unsigned long long gpgpu_n_intrawarp_mshr_merge = 0;
+  unsigned long long gpgpu_n_cmem_portconflict = 0;
+  unsigned long long gpu_reg_bank_conflict_stalls = 0;
+
+  unsigned long long gpgpu_stall_shd_mem_cmem_resource_stall = 0;
+  unsigned long long gpgpu_stall_shd_mem_smem_bk_conf = 0;
+  unsigned long long gpgpu_stall_shd_mem_glmem_resource_stall = 0;
+  unsigned long long gpgpu_stall_shd_mem_glmem_coal_stall = 0;
+  unsigned long long gpgpu_stall_shd_mem_glmem_data_port_stall = 0;
+
+  traffic_breakdown outgoing_traffic;
+  traffic_breakdown incoming_traffic;
+
+  unsigned long long memlat_num_mfs = 0;
+
+  unsigned long long memlat_mf_total_lat = 0;
+  unsigned long long memlat_tot_icnt2mem_lat = 0;
+  unsigned long long memlat_tot_icnt2sh_lat  = 0;
+
+  unsigned memlat_max_mf_lat = 0;
+  unsigned memlat_max_icnt2mem_lat = 0;
+  unsigned memlat_max_mrq_lat = 0;
+  unsigned memlat_max_icnt2sh_lat = 0;
+  
+  unsigned memlat_mrq_lat_table[32]      = {0};
+  unsigned memlat_dq_lat_table[32]       = {0};
+  unsigned memlat_mf_lat_table[32]       = {0};
+  unsigned memlat_icnt2mem_lat_table[24] = {0};
+  unsigned memlat_icnt2sh_lat_table[24]  = {0};
+  unsigned memlat_mf_lat_pw_table[32]    = {0};
+
+  unsigned long long memlat_mf_tot_lat_pw = 0;
+  unsigned long long memlat_mf_num_lat_pw = 0;
+
+  std::vector<unsigned> memlat_max_conc_access2samerow;   // (n_mem*nbk)
+  std::vector<unsigned> memlat_max_servicetime2samerow;   // (n_mem*nbk)
+  std::vector<unsigned long long> memlat_row_access;     // total served row accesses per (dram,bank)
+  std::vector<unsigned long long> memlat_num_activates;  // #row-episodes participated per (dram,bank)
+  std::vector<unsigned long long> memlat_totalbankreads;  // (n_mem*nbk)
+  std::vector<unsigned long long> memlat_totalbankwrites;  // (n_mem*nbk)
+  std::vector<unsigned long long> totalbankaccesses;
+  std::vector<unsigned long long> memlat_mf_total_laten;
+  std::vector<unsigned long long> memlat_max_mf_laten;
+  //DRAM
+
+  std::vector<unsigned long long> dram_n_cmd;
+  std::vector<unsigned long long> dram_n_nop;
+  std::vector<unsigned long long> dram_n_act;
+  std::vector<unsigned long long> dram_n_pre;
+  std::vector<unsigned long long> dram_n_activity;
+  std::vector<unsigned long long> dram_n_ref_event;
+  std::vector<unsigned long long> dram_n_req;
+  std::vector<unsigned long long> dram_n_rd;
+  std::vector<unsigned long long> dram_n_rd_L2_A;
+  std::vector<unsigned long long> dram_n_wr;
+  std::vector<unsigned long long> dram_n_wr_WB;
+  std::vector<unsigned long long> dram_bwutil;
+  //DRAM per-bank stats (flattened: idx = dram_id * nbk + bank)
+  std::vector<unsigned long long> dram_bk_n_access;
+  std::vector<unsigned long long> dram_bk_n_idle;
+
+  // ---- DRAM BLP / locality (per dram_id) ----
+  std::vector<unsigned long long> dram_banks_1time;               // sum(memory_pending)
+  std::vector<unsigned long long> dram_banks_access_total;        // cycles with memory_pending>0
+
+  std::vector<unsigned long long> dram_banks_time_rw;             // sum(memory_pending_rw)
+  std::vector<unsigned long long> dram_banks_access_rw_total;      // cycles with memory_pending_rw>0
+
+  std::vector<unsigned long long> dram_banks_time_ready;          // sum(memory_Pending_ready)
+  std::vector<unsigned long long> dram_banks_access_ready_total;   // cycles with memory_Pending_ready>0
+
+  std::vector<unsigned long long> dram_w2r_ratio_sum_1e6;          // sum( write/(write+read) ) * 1e6 over rw cycles
+  std::vector<unsigned long long> dram_bkgrp_parallsim_rw;         // sum(bankgrp_count) over rw cycles
+
+
+  std::vector<unsigned long long> dram_access_num;
+  std::vector<unsigned long long> dram_hits_num;
+  std::vector<unsigned long long> dram_read_num;
+  std::vector<unsigned long long> dram_hits_read_num;
+  std::vector<unsigned long long> dram_write_num;
+  std::vector<unsigned long long> dram_hits_write_num;
+
+
+  // BW classification (per dram_id): mirrors util_bw / wasted_bw_col / wasted_bw_row / idle_bw
+  std::vector<unsigned long long> dram_util_bw;
+  std::vector<unsigned long long> dram_wasted_bw_col;
+  std::vector<unsigned long long> dram_wasted_bw_row;
+  std::vector<unsigned long long> dram_idle_bw;
+
+  std::vector<unsigned long long> dram_RCDc_limit;
+  std::vector<unsigned long long> dram_RCDWRc_limit;
+  std::vector<unsigned long long> dram_WTRc_limit;
+  std::vector<unsigned long long> dram_RTWc_limit;
+  std::vector<unsigned long long> dram_CCDLc_limit;
+  std::vector<unsigned long long> dram_rwq_limit;
+  std::vector<unsigned long long> dram_CCDLc_limit_alone;
+  std::vector<unsigned long long> dram_WTRc_limit_alone;
+  std::vector<unsigned long long> dram_RTWc_limit_alone;
+
+  std::vector<unsigned long long> dram_issued_total_row;
+  std::vector<unsigned long long> dram_issued_total_col;
+  std::vector<unsigned long long> dram_issued_total;
+  std::vector<unsigned long long> dram_issued_two;
+  std::vector<unsigned long long> dram_ave_mrqs_sum;
+
+  // --- DRAM queue / bins (per dram_id) ---
+  std::vector<unsigned long long> dram_max_mrqs;     // size = n_mem
+
+  // util/eff bins per dram_id (flattened: dram_id*10 + bin)
+  std::vector<unsigned long long> dram_util_bins;    // size = n_mem*10
+  std::vector<unsigned long long> dram_eff_bins;     // size = n_mem*10
+
+  // snapshots for interval-binning (per dram_id)
+  std::vector<unsigned long long> dram_last_n_cmd;      // size = n_mem
+  std::vector<unsigned long long> dram_last_n_activity; // size = n_mem
+  std::vector<unsigned long long> dram_last_bwutil;     // size = n_mem
+
+
+};
 
 struct kernel_stats_view_t {
   // "Unset" sentinels 
@@ -338,6 +461,119 @@ struct kernel_stats_view_t {
   std::vector<unsigned long long> single_issue_nums;
   std::vector<unsigned long long> dual_issue_nums;
 
+
+  unsigned long long gpgpu_n_stall_shd_mem = kUnset;
+
+  unsigned long long gpgpu_n_shmem_bkconflict = kUnset;
+  unsigned long long gpgpu_n_l1cache_bkconflict = kUnset;
+  unsigned long long gpgpu_n_intrawarp_mshr_merge = kUnset;
+  unsigned long long gpgpu_n_cmem_portconflict = kUnset;
+  unsigned long long gpu_reg_bank_conflict_stalls = kUnset;
+
+  unsigned long long gpgpu_stall_shd_mem_cmem_resource_stall = kUnset;
+  unsigned long long gpgpu_stall_shd_mem_smem_bk_conf = kUnset;
+  unsigned long long gpgpu_stall_shd_mem_glmem_resource_stall = kUnset;
+  unsigned long long gpgpu_stall_shd_mem_glmem_coal_stall = kUnset;
+  unsigned long long gpgpu_stall_shd_mem_glmem_data_port_stall = kUnset;
+
+  const traffic_breakdown *outgoing_traffic = nullptr;
+  const traffic_breakdown *incoming_traffic = nullptr;
+
+
+  unsigned long long memlat_num_mfs = kUnset;
+
+  unsigned long long memlat_mf_total_lat = kUnset;
+  unsigned long long memlat_tot_icnt2mem_lat = kUnset;
+  unsigned long long memlat_tot_icnt2sh_lat  = kUnset;
+
+  unsigned memlat_max_mf_lat = kUnset;
+  unsigned memlat_max_icnt2mem_lat = kUnset;
+  unsigned memlat_max_mrq_lat = kUnset;
+  unsigned memlat_max_icnt2sh_lat = kUnset;
+
+  unsigned memlat_mrq_lat_table[32]      = {0};
+  unsigned memlat_dq_lat_table[32]       = {0};
+  unsigned memlat_mf_lat_table[32]       = {0};
+  unsigned memlat_icnt2mem_lat_table[24] = {0};
+  unsigned memlat_icnt2sh_lat_table[24]  = {0};
+  unsigned memlat_mf_lat_pw_table[32]    = {0};
+
+  const unsigned *memlat_max_conc_access2samerow = nullptr;
+  const unsigned *memlat_max_servicetime2samerow = nullptr;
+  unsigned memlat_rowstats_n_mem = 0;
+  unsigned memlat_rowstats_n_bk  = 0;
+
+  const unsigned long long *memlat_row_access    = nullptr;
+  const unsigned long long *memlat_num_activates = nullptr;
+  const unsigned long long *memlat_totalbankreads = nullptr;
+  const unsigned long long *memlat_totalbankwrites = nullptr;
+  const unsigned long long *totalbankaccesses = nullptr;
+  const unsigned long long *memlat_mf_total_laten = nullptr;
+  const unsigned long long *memlat_max_mf_laten = nullptr;
+
+  // DRAM
+
+  const unsigned long long *dram_n_cmd      = nullptr;
+  const unsigned long long *dram_n_nop      = nullptr;
+  const unsigned long long *dram_n_activity = nullptr;
+  const unsigned long long *dram_n_act      = nullptr;
+  const unsigned long long *dram_n_pre      = nullptr;
+  const unsigned long long *dram_n_req       = nullptr; 
+  const unsigned long long *dram_n_ref_event = nullptr; 
+  const unsigned long long *dram_n_rd       = nullptr;
+  const unsigned long long *dram_n_rd_L2_A  = nullptr;
+  const unsigned long long *dram_n_wr       = nullptr;
+  const unsigned long long *dram_n_wr_WB    = nullptr;
+  const unsigned long long *dram_bwutil = nullptr;
+  const unsigned long long *dram_bk_n_access = nullptr;
+  const unsigned long long *dram_bk_n_idle   = nullptr;
+  // ---- DRAM BLP / locality (per dram_id) ----
+  const unsigned long long *dram_banks_1time = nullptr;
+  const unsigned long long *dram_banks_access_total = nullptr;
+
+  const unsigned long long *dram_banks_time_rw = nullptr;
+  const unsigned long long *dram_banks_access_rw_total = nullptr;
+
+  const unsigned long long *dram_banks_time_ready = nullptr;
+  const unsigned long long *dram_banks_access_ready_total = nullptr;
+
+  const unsigned long long *dram_w2r_ratio_sum_1e6 = nullptr;
+  const unsigned long long *dram_bkgrp_parallsim_rw = nullptr;
+
+  const unsigned long long *dram_access_num = nullptr;
+  const unsigned long long *dram_hits_num   = nullptr;
+  const unsigned long long *dram_read_num   = nullptr;
+  const unsigned long long *dram_hits_read_num  = nullptr;
+  const unsigned long long *dram_write_num  = nullptr;
+  const unsigned long long *dram_hits_write_num = nullptr;
+
+  const unsigned long long *dram_bk_access = nullptr;
+
+
+  const unsigned long long *dram_util_bw        = nullptr;
+  const unsigned long long *dram_wasted_bw_col  = nullptr;
+  const unsigned long long *dram_wasted_bw_row  = nullptr;
+  const unsigned long long *dram_idle_bw        = nullptr;
+
+  const unsigned long long *dram_RCDc_limit          = nullptr;
+  const unsigned long long *dram_RCDWRc_limit        = nullptr;
+  const unsigned long long *dram_WTRc_limit          = nullptr;
+  const unsigned long long *dram_RTWc_limit          = nullptr;
+  const unsigned long long *dram_CCDLc_limit         = nullptr;
+  const unsigned long long *dram_rwq_limit           = nullptr;
+  const unsigned long long *dram_CCDLc_limit_alone   = nullptr;
+  const unsigned long long *dram_WTRc_limit_alone    = nullptr;
+  const unsigned long long *dram_RTWc_limit_alone    = nullptr;
+
+  const unsigned long long *dram_issued_total_row = nullptr;
+  const unsigned long long *dram_issued_total_col = nullptr;
+  const unsigned long long *dram_issued_total     = nullptr;
+  const unsigned long long *dram_issued_two       = nullptr;
+  const unsigned long long *dram_ave_mrqs_sum     = nullptr;
+
+  const unsigned long long *dram_max_mrqs   = nullptr;
+  const unsigned long long *dram_util_bins = nullptr; // n_mem*10
+  const unsigned long long *dram_eff_bins  = nullptr; // n_mem*10
 
 };
 
@@ -801,9 +1037,134 @@ class gpgpu_sim : public gpgpu_t {
   inline void record_kernel_l1t(unsigned kernel_uid, unsigned smid, cache_request_status s) {
     record_kernel_l1_access(kernel_uid, smid, l1_kind_t::L1T, s);
   }
+  void record_kernel_icnt_stats(unsigned kid, const mem_fetch *mf);
+  void record_kernel_mem_inst_commit(unsigned kernel_uid,const warp_inst_t &inst);
+  unsigned kernel_uid_from_stream(unsigned long long streamID) const;
 
+  void record_kernel_warp_issue_distro(unsigned smid,unsigned warp_id,unsigned long long streamID);
+
+  void record_kernel_shader_active_count_bucket(unsigned kernel_uid,unsigned active_count);
+
+  void record_kernel_shader_idle_cycle(unsigned kernel_uid);
+  void record_kernel_shader_scoreboard_cycle(unsigned kernel_uid);
+  void record_kernel_shader_stall_cycle(unsigned kernel_uid);
+
+  void record_kernel_scheduler_issue(unsigned kernel_uid,unsigned sched_id,unsigned issued_count);
+  void record_kernel_inst_commit(unsigned int kernel_uid, unsigned int active_lanes);
+  unsigned sole_active_kernel_uid() const;
 
   void shader_print_scheduler_stat(FILE *fout,bool print_dynamic_info,const kernel_stats_view_t *view) const;
+  void record_kernel_mem_read(unsigned kernel_uid,const warp_inst_t &inst);
+
+  // void record_kernel_stall_shd_mem_cmem_resource(unsigned kid);
+  // void record_kernel_stall_shd_mem_smem_bkconf(unsigned kid);
+  // void record_kernel_stall_shd_mem_gl_resource(unsigned kid);
+  // void record_kernel_stall_shd_mem_gl_coal(unsigned kid);
+  // void record_kernel_stall_shd_mem_gl_data_port(unsigned kid);
+
+  void record_kernel_shmem_bkconflict(unsigned kid);
+  void record_kernel_l1cache_bkconflict(unsigned kid);
+  void record_kernel_intrawarp_mshr_merge(unsigned kid);
+  void record_kernel_cmem_portconflict(unsigned kid);
+  void record_kernel_reg_bank_conflict_stall(unsigned kid);
+  void record_kernel_stall_shd_mem(unsigned kernel_uid,unsigned mem_space, unsigned stall_reason);
+  void record_kernel_outgoing_traffic(unsigned kid, mem_fetch *mf, unsigned sz);
+  void record_kernel_incoming_traffic(unsigned kid, mem_fetch *mf, unsigned sz);
+  void record_kernel_memlat(unsigned kid,unsigned mf_lat,unsigned icnt2mem_lat,unsigned mrq_lat,unsigned icnt2sh_lat);
+  void record_kernel_mrq_lat_bucket(unsigned kid, unsigned lat);
+  void record_kernel_icnt2mem_lat_bucket(unsigned kid, unsigned lat);
+  void record_kernel_icnt2sh_lat_bucket(unsigned kid, unsigned lat);
+  void record_kernel_mf_lat_bucket(unsigned kid, unsigned lat);
+
+  void record_kernel_mf_lat_pw_accum(unsigned kid, unsigned mf_lat);
+  void flush_kernel_mf_lat_pw_tables();
+  inline unsigned flat_idx(unsigned dram, unsigned bank, unsigned nbk) {
+    return dram * nbk + bank;
+  }
+
+  void record_kernel_row_episode_access(unsigned kid,unsigned dram,unsigned bank,unsigned cnt);
+  void record_kernel_row_episode_servicetime(unsigned kid,unsigned dram,unsigned bank,unsigned srv);
+
+  void record_kernel_row_access(unsigned kid,unsigned dram,unsigned bank);
+  void record_kernel_row_activate(unsigned kid,unsigned dram,unsigned bank);
+  void record_kernel_totalbankread(unsigned kid,unsigned dram,unsigned bank,unsigned long long inc);
+  void record_kernel_mf_bank_lat_sum(unsigned kid,unsigned dram,unsigned bank,unsigned mf_latency);
+  void record_max_mf_lat_per_bank(unsigned kid,unsigned dram,unsigned bank,unsigned mf_latency);
+
+  void record_kernel_dram_cycle_counters(unsigned kid,unsigned dram_id,unsigned long long inc_cmd,
+                                                  unsigned long long inc_nop,
+                                                  unsigned long long inc_act);
+  void record_kernel_dram_row_cmd_counters(unsigned kid,
+                                         unsigned dram_id,
+                                         unsigned long long inc_act,
+                                         unsigned long long inc_pre);
+  void record_kernel_dram_req_ref_event(unsigned kid,
+                                        unsigned dram_id,
+                                        unsigned long long inc_req,
+                                        unsigned long long inc_ref);
+  void record_kernel_dram_rw_counters(unsigned kid, unsigned dram_id,
+                                    unsigned long long inc_rd,
+                                    unsigned long long inc_rd_l2a,
+                                    unsigned long long inc_wr,
+                                    unsigned long long inc_wr_wb);
+  void record_kernel_dram_bwutil(unsigned kid, unsigned dram_id,
+                                unsigned long long inc_bwutil);
+                            
+  void record_kernel_dram_bank_access(unsigned kid, unsigned dram_id, unsigned bank,
+                                      unsigned long long inc_access);
+
+  void record_kernel_dram_bank_idle(unsigned kid, unsigned dram_id, unsigned bank,
+                                    unsigned long long inc_idle);
+
+
+  void record_kernel_dram_rowbuf_locality(unsigned kid, unsigned dram_id,
+                                          bool is_write, bool is_row_hit);
+
+  void record_kernel_dram_blp_stats(unsigned kid, unsigned dram_id,
+                                    unsigned long long inc_banks_1time,
+                                    unsigned long long inc_banks_access_total,
+                                    unsigned long long inc_banks_time_rw,
+                                    unsigned long long inc_banks_access_rw_total,
+                                    unsigned long long inc_banks_time_ready,
+                                    unsigned long long inc_banks_access_ready_total,
+                                    unsigned long long inc_w2r_ratio_sum_1e6,
+                                    unsigned long long inc_bkgrp_parallsim_rw);      
+                                  
+  void record_kernel_dram_bw_class(unsigned kid, unsigned dram_id,
+                                 unsigned long long inc_util,
+                                 unsigned long long inc_wcol,
+                                 unsigned long long inc_wrow,
+                                 unsigned long long inc_idle);
+
+  void record_kernel_dram_bw_bottlenecks(unsigned kid, unsigned dram_id,
+                                        unsigned long long inc_RCDc,
+                                        unsigned long long inc_RCDWRc,
+                                        unsigned long long inc_WTRc,
+                                        unsigned long long inc_RTWc,
+                                        unsigned long long inc_CCDLc,
+                                        unsigned long long inc_rwq,
+                                        unsigned long long inc_CCDLc_alone,
+                                        unsigned long long inc_WTRc_alone,
+                                        unsigned long long inc_RTWc_alone);
+
+  void record_kernel_dram_issue_stats(unsigned kid, unsigned dram_id,
+                                    unsigned long long inc_row,
+                                    unsigned long long inc_col,
+                                    unsigned long long inc_total,
+                                    unsigned long long inc_two,
+                                    unsigned long long inc_ave_mrqs);
+
+  void record_kernel_dram_max_mrqs(unsigned kid, unsigned dram_id,
+                                  unsigned long long qlen);
+
+  // called once per “stat interval” (or at kernel end) to bin util/eff
+  void record_kernel_dram_util_eff_bins_interval(unsigned kid, unsigned dram_id);
+  // SM -> kernel uid owner (0 = none)
+  std::vector<unsigned> m_sm_owner_kid;
+
+  unsigned kernel_uid_from_smid(unsigned sid) const;
+  void bind_kernel_to_allowed_sms(const kernel_info_t *k);
+  void unbind_kernel_from_sms(unsigned kid);
 
 
   void init();

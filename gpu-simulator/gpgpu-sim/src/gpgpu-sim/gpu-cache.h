@@ -84,6 +84,7 @@ struct evicted_block_info {
   unsigned m_modified_size;
   mem_access_byte_mask_t m_byte_mask;
   mem_access_sector_mask_t m_sector_mask;
+  unsigned m_last_kernel_uid = 0;
   evicted_block_info() {
     m_block_addr = 0;
     m_modified_size = 0;
@@ -102,7 +103,18 @@ struct evicted_block_info {
     m_byte_mask = byte_mask;
     m_sector_mask = sector_mask;
   }
+    void set_info(new_addr_type block_addr, unsigned modified_size,
+                mem_access_byte_mask_t byte_mask,
+                mem_access_sector_mask_t sector_mask,
+                unsigned last_kernel_uid) {
+    m_block_addr = block_addr;
+    m_modified_size = modified_size;
+    m_byte_mask = byte_mask;
+    m_sector_mask = sector_mask;
+    m_last_kernel_uid = last_kernel_uid;
+  }
 };
+
 
 struct cache_event {
   enum cache_event_type m_cache_event_type;
@@ -127,6 +139,12 @@ struct cache_block_t {
     m_tag = 0;
     m_block_addr = 0;
   }
+
+
+
+  void set_last_kernel_uid(unsigned kid) { m_last_kernel_uid = kid; }
+  unsigned get_last_kernel_uid() const   { return m_last_kernel_uid; }
+  bool has_last_kernel_uid() const       { return m_last_kernel_uid != 0; }
 
   virtual void allocate(new_addr_type tag, new_addr_type block_addr,
                         unsigned time,
@@ -167,6 +185,9 @@ struct cache_block_t {
 
   new_addr_type m_tag;
   new_addr_type m_block_addr;
+  private:
+    unsigned m_last_kernel_uid = 0;
+
 };
 
 struct line_cache_block : public cache_block_t {
@@ -1048,6 +1069,7 @@ class mshr_table {
   /// Returns next ready access
   mem_fetch *next_access();
   void display(FILE *fp) const;
+  void display(FILE *fp, unsigned kid) const;
   // Returns true if there is a pending read after write
   bool is_read_after_write_pending(new_addr_type block_addr);
 
@@ -1344,6 +1366,7 @@ class baseline_cache : public cache_t {
   void invalidate() { m_tag_array->invalidate(); }
   void print(FILE *fp, unsigned &accesses, unsigned &misses) const;
   void display_state(FILE *fp) const;
+  void display_state(FILE *fp, unsigned kid) const;
 
   // Stat collection
   const cache_stats &get_stats() const { return m_stats; }
@@ -1803,6 +1826,7 @@ class tex_cache : public cache_t {
   /// "MISS")
   mem_fetch *next_access() { return m_result_fifo.pop(); }
   void display_state(FILE *fp) const;
+  void display_state(FILE *fp, unsigned kid) const;
 
   // accessors for cache bandwidth availability - stubs for now
   bool data_port_free() const { return true; }

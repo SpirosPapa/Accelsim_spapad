@@ -752,9 +752,7 @@ void shader_core_stats::print(FILE *fout, const kernel_stats_view_t *view) const
   fprintf(fout, "gpgpu_n_tot_thrd_icount = %lld\n", view->gpgpu_n_tot_thrd_icount);
   fprintf(fout, "gpgpu_n_tot_w_icount = %lld\n", view->gpgpu_n_tot_w_icount);
 
-  // for now these are per-kernel only if you later record them;
-  // we print 0 until we instrument their true sites
-  fprintf(fout, "gpgpu_n_stall_shd_mem = %d\n", 0);
+  fprintf(fout, "gpgpu_n_stall_shd_mem = %llu\n", view->gpgpu_n_stall_shd_mem);
 
   fprintf(fout, "gpgpu_n_mem_read_local = %lld\n", view->gpgpu_n_mem_read_local);
   fprintf(fout, "gpgpu_n_mem_write_local = %lld\n", view->gpgpu_n_mem_write_local);
@@ -771,17 +769,23 @@ void shader_core_stats::print(FILE *fout, const kernel_stats_view_t *view) const
   fprintf(fout, "gpgpu_n_const_mem_insn = %lld\n", view->gpgpu_n_const_mem_insn);
   fprintf(fout, "gpgpu_n_param_mem_insn = %lld\n", view->gpgpu_n_param_mem_insn);
 
-  // These conflict + stall breakdowns we will fix later (need per-kernel recording sites)
-  fprintf(fout, "gpgpu_n_shmem_bkconflict = %d\n", 0);
-  fprintf(fout, "gpgpu_n_l1cache_bkconflict = %d\n", 0);
-  fprintf(fout, "gpgpu_n_intrawarp_mshr_merge = %d\n", 0);
-  fprintf(fout, "gpgpu_n_cmem_portconflict = %d\n", 0);
-  fprintf(fout, "gpgpu_stall_shd_mem[c_mem][resource_stall] = %d\n", 0);
-  fprintf(fout, "gpgpu_stall_shd_mem[s_mem][bk_conf] = %d\n", 0);
-  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][resource_stall] = %d\n", 0);
-  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][coal_stall] = %d\n", 0);
-  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][data_port_stall] = %d\n", 0);
-  fprintf(fout, "gpu_reg_bank_conflict_stalls = %d\n", 0);
+  fprintf(fout, "gpgpu_n_shmem_bkconflict = %llu\n", view->gpgpu_n_shmem_bkconflict);
+  fprintf(fout, "gpgpu_n_l1cache_bkconflict = %llu\n", view->gpgpu_n_l1cache_bkconflict);
+  fprintf(fout, "gpgpu_n_intrawarp_mshr_merge = %llu\n", view->gpgpu_n_intrawarp_mshr_merge);
+  fprintf(fout, "gpgpu_n_cmem_portconflict = %llu\n", view->gpgpu_n_cmem_portconflict);
+  fprintf(fout, "gpgpu_stall_shd_mem[c_mem][resource_stall] = %llu\n",
+          view->gpgpu_stall_shd_mem_cmem_resource_stall);
+  fprintf(fout, "gpgpu_stall_shd_mem[s_mem][bk_conf] = %llu\n",
+          view->gpgpu_stall_shd_mem_smem_bk_conf);
+  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][resource_stall] = %llu\n",
+          view->gpgpu_stall_shd_mem_glmem_resource_stall);
+  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][coal_stall] = %llu\n",
+          view->gpgpu_stall_shd_mem_glmem_coal_stall);
+  fprintf(fout, "gpgpu_stall_shd_mem[gl_mem][data_port_stall] = %llu\n",
+          view->gpgpu_stall_shd_mem_glmem_data_port_stall);
+
+  fprintf(fout, "gpu_reg_bank_conflict_stalls = %llu\n",
+          view->gpu_reg_bank_conflict_stalls);
 
   // Warp Occupancy Distribution
   fprintf(fout, "Warp Occupancy Distribution:\n");
@@ -814,7 +818,9 @@ void shader_core_stats::print(FILE *fout, const kernel_stats_view_t *view) const
     fprintf(fout, "WS%d:%llu\t", i, view->dual_issue_nums[i]);
   fprintf(fout, "\n");
 
-  // outgoing/incoming traffic stats -> later
+  view->outgoing_traffic->print(fout);
+  view->incoming_traffic->print(fout);
+
 }
 
 
@@ -1006,21 +1012,15 @@ void shader_core_ctx::fetch() {
                           mf->get_access_size(), mf->get_wid());
       assert(m_warp[mf->get_wid()]->get_pc() ==
              (mf->get_addr() -
-              PROGRAM_MEM_START));  // Verify that we got the instruction we
-                                    // were expecting.
+              PROGRAM_MEM_START));
       m_inst_fetch_buffer.m_valid = true;
       m_warp[mf->get_wid()]->set_last_fetch(m_gpu->gpu_sim_cycle);
       delete mf;
     } else {
-      // find an active warp with space in instruction buffer that is not
-      // already waiting on a cache miss and get next 1-2 instructions from
-      // i-cache...
       for (unsigned i = 0; i < m_config->max_warps_per_shader; i++) {
         unsigned warp_id =
             (m_last_warp_fetched + 1 + i) % m_config->max_warps_per_shader;
 
-        // this code checks if this warp has finished executing and can be
-        // reclaimed
         if (m_warp[warp_id]->hardware_done() &&
             !m_scoreboard->pendingWrites(warp_id) &&
             !m_warp[warp_id]->done_exit()) {
@@ -1047,7 +1047,6 @@ void shader_core_ctx::fetch() {
           assert(m_active_warps >= 0);
         }
 
-        // this code fetches instructions from the i-cache or generates memory
         if (!m_warp[warp_id]->functional_done() &&
             !m_warp[warp_id]->imiss_pending() &&
             m_warp[warp_id]->ibuffer_empty()) {
@@ -1060,10 +1059,7 @@ void shader_core_ctx::fetch() {
           if ((offset_in_block + nbytes) > m_config->m_L1I_config.get_line_sz())
             nbytes = (m_config->m_L1I_config.get_line_sz() - offset_in_block);
 
-          // TODO: replace with use of allocator
-          // mem_fetch *mf = m_mem_fetch_allocator->alloc()
           mem_access_t acc(INST_ACC_R, ppc, nbytes, false, m_gpu->gpgpu_ctx);
-
 
           auto *kinfo = m_warp[warp_id]->get_kernel_info();
           unsigned long long sid = kinfo ? kinfo->get_streamID() : 0;
@@ -1073,26 +1069,34 @@ void shader_core_ctx::fetch() {
               READ_PACKET_SIZE, warp_id, m_sid, m_tpc, m_memory_config,
               m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
 
-         if (kinfo) mf->set_kernel_uid(kinfo->get_uid());
+          if (kinfo) mf->set_kernel_uid(kinfo->get_uid());
 
           std::list<cache_event> events;
           enum cache_request_status status;
+
           if (m_config->perfect_inst_const_cache) {
             status = HIT;
             shader_cache_access_log(m_sid, INSTRUCTION, 0);
-          } else{
+          } else {
             status = m_L1I->access(
                 (new_addr_type)ppc, mf,
                 m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle, events);
-            // MY ADDITION 
-            if (mf && mf->has_kernel_uid()) {
-              const unsigned kid = mf->get_kernel_uid();
-              const unsigned smid = m_sid; // shader core id
-              m_gpu->record_kernel_l1i(kid, smid, status);
+
+            //// MY ADDITION classify merged misses as MSHR_HIT 
+            bool read_sent = was_read_sent(events);
+
+            cache_request_status rec_status = status;
+            if ((status == MISS || status == SECTOR_MISS) && !read_sent) {
+              rec_status = MSHR_HIT;
             }
+
+            // Record per-kernel using corrected status
+            if (mf && mf->has_kernel_uid()) {
+              m_gpu->record_kernel_l1i(mf->get_kernel_uid(), m_sid, rec_status);
+            }
+            ////
           }
 
-            ///
           if (status == MISS) {
             m_last_warp_fetched = warp_id;
             m_warp[warp_id]->set_imiss_pending();
@@ -1115,6 +1119,7 @@ void shader_core_ctx::fetch() {
 
   m_L1I->cycle();
 }
+
 
 unsigned shader_core_ctx::get_warp_kernel_uid(unsigned warp_id) const {
   if (warp_id >= m_config->max_warps_per_shader) return 0;
@@ -1146,9 +1151,12 @@ void shader_core_ctx::issue_warp(register_set &pipe_reg_set,
       m_warp[warp_id]->get_dynamic_warp_id(), sch_id,
       m_warp[warp_id]->get_streamID());  // dynamic instruction information
   //MY ADDITION
-  m_gpu->record_kernel_warp_issue(m_sid,warp_id,sch_id,(*pipe_reg)->active_count(),m_warp[warp_id]->get_streamID(),*pipe_reg);
-
-
+  //m_gpu->record_kernel_warp_issue(m_sid,warp_id,sch_id,(*pipe_reg)->active_count(),m_warp[warp_id]->get_streamID(),*pipe_reg);
+  m_gpu->record_kernel_warp_issue_distro(m_sid, warp_id, m_warp[warp_id]->get_streamID());
+  const unsigned kid = m_gpu->kernel_uid_from_stream(m_warp[warp_id]->get_streamID());
+  if (kid) {
+    m_gpu->record_kernel_shader_active_count_bucket(kid, (*pipe_reg)->active_count());
+  }
   m_stats->shader_cycle_distro[2 + (*pipe_reg)->active_count()]++;
   func_exec_inst(**pipe_reg);
 
@@ -1369,6 +1377,10 @@ void scheduler_unit::cycle() {
   bool issued_inst = false;  // of these we issued one
 
   order_warps();
+  const unsigned smid = m_shader->get_sid();
+  const unsigned kid_cycle = m_shader->get_gpu()->kernel_uid_from_smid(smid);
+
+
   for (std::vector<shd_warp_t *>::const_iterator iter =
            m_next_cycle_prioritized_warps.begin();
        iter != m_next_cycle_prioritized_warps.end(); iter++) {
@@ -1647,6 +1659,15 @@ void scheduler_unit::cycle() {
         }
       }
       m_num_issued_last_cycle = issued;
+      unsigned kid_issued = 0;
+      {
+        const unsigned long long sid = warp(warp_id).get_streamID();
+        kid_issued = m_shader->get_gpu()->kernel_uid_from_stream(sid);
+      }
+
+      if (kid_issued) {
+        m_shader->get_gpu()->record_kernel_scheduler_issue(kid_issued, m_id, issued);
+      }
       if (issued == 1)
         m_stats->single_issue_nums[m_id]++;
       else if (issued > 1)
@@ -1666,6 +1687,14 @@ void scheduler_unit::cycle() {
                                         // to memory)
   else if (!issued_inst)
     m_stats->shader_cycle_distro[2]++;  // pipeline stalled
+  // per-kernel recorder (same decision site)
+  if (kid_cycle) {
+    gpgpu_sim *gpu = m_shader->get_gpu();
+    if (!valid_inst)      gpu->record_kernel_shader_idle_cycle(kid_cycle);
+    else if (!ready_inst) gpu->record_kernel_shader_scoreboard_cycle(kid_cycle);
+    else if (!issued_inst)gpu->record_kernel_shader_stall_cycle(kid_cycle);
+  }
+
 }
 
 void scheduler_unit::do_on_warp_issued(
@@ -2010,9 +2039,11 @@ void shader_core_ctx::unset_depbar(const warp_inst_t &inst) {
 
 void shader_core_ctx::warp_inst_complete(const warp_inst_t &inst) {
 #if 0
-      printf("[warp_inst_complete] uid=%u core=%u warp=%u pc=%#x @ time=%llu \n",
-             inst.get_uid(), m_sid, inst.warp_id(), inst.pc,  m_gpu->gpu_tot_sim_cycle +  m_gpu->gpu_sim_cycle);
+  printf("[warp_inst_complete] uid=%u core=%u warp=%u pc=%#x @ time=%llu \n",
+         inst.get_uid(), m_sid, inst.warp_id(), inst.pc,
+         m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
 #endif
+
   if (inst.op_pipe == SP__OP)
     m_stats->m_num_sp_committed[m_sid]++;
   else if (inst.op_pipe == SFU__OP)
@@ -2026,22 +2057,43 @@ void shader_core_ctx::warp_inst_complete(const warp_inst_t &inst) {
     m_stats->m_num_sim_insn[m_sid] += inst.active_count();
 
   m_stats->m_num_sim_winsn[m_sid]++;
+
   const unsigned n = inst.active_count();
   m_gpu->gpu_sim_insn += n;
-  // Attribute committed instructions to the correct kernel
-  if (auto *k = m_warp[inst.warp_id()]->get_kernel_info()) {
-    m_gpu->record_kernel_inst(k->get_uid(), n);
-  } else {
-    // fallback 
+
+  unsigned kid = 0;
+
+  const unsigned inst_kid = inst.get_kernel_uid();
+  if (inst_kid != 0u && inst_kid != (unsigned)-1) {
+    kid = inst_kid;
+  }
+  if (!kid) {
+    if (auto *kinfo = m_warp[inst.warp_id()]->get_kernel_info()) {
+      kid = kinfo->get_uid();
+    }
+  }
+  if (!kid) {
+    kid = get_warp_kernel_uid(inst.warp_id());
+  }
+
+  if (!kid) {
     auto it = m_gpu->stream_to_kernel_map.find(inst.get_streamID());
     if (it != m_gpu->stream_to_kernel_map.end()) {
-      m_gpu->record_kernel_inst(it->second, n);
+      kid = it->second;
     }
   }
 
-  inst.completed(m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
+  if (kid) {
+    m_gpu->record_kernel_inst(kid, n);
+    m_gpu->record_kernel_inst_commit(kid, n);
+    m_gpu->record_kernel_mem_inst_commit(kid, inst);
+  }
 
+  inst.completed(m_gpu->gpu_tot_sim_cycle + m_gpu->gpu_sim_cycle);
 }
+
+
+
 
 void shader_core_ctx::writeback() {
   unsigned max_committed_thread_instructions =
@@ -2108,6 +2160,10 @@ bool ldst_unit::shared_cycle(warp_inst_t &inst, mem_stage_stall_type &rc_fail,
     fail_type = S_MEM;
     rc_fail = BK_CONF;
     m_stats->gpgpu_n_shmem_bkconflict++;
+    //MY ADDITION
+    const unsigned kid =m_gpu->kernel_uid_from_stream(inst.get_streamID());   
+    if (kid) m_gpu->record_kernel_shmem_bkconflict(kid);
+
   } else
     rc_fail = NO_RC_FAIL;
   return !stall;
@@ -2166,37 +2222,48 @@ mem_stage_stall_type ldst_unit::process_memory_access_queue(cache_t *cache,
 
   if (!cache->data_port_free()) return DATA_PORT_STALL;
 
-  // const mem_access_t &access = inst.accessq_back();
   mem_fetch *mf = m_mf_allocator->alloc(
       inst, inst.accessq_back(),
       m_core->get_gpu()->gpu_sim_cycle + m_core->get_gpu()->gpu_tot_sim_cycle);
+
   tag_mf_kernel(mf, inst.warp_id());
-      // TRY TO SET CORRECT ID 
-      // if (mf && !mf->has_kernel_uid()) {
-      //   unsigned kid = m_core->get_warp_kernel_uid(inst.warp_id());
-      //   if (kid) mf->set_kernel_uid(kid);
-      // }
-      ///
+
   std::list<cache_event> events;
   enum cache_request_status status = cache->access(
       mf->get_addr(), mf,
       m_core->get_gpu()->gpu_sim_cycle + m_core->get_gpu()->gpu_tot_sim_cycle,
       events);
-  // ---- NEW: per-kernel L1C/L1T accounting (record at *access* time) ----
+
+  //// my addition classify merged misses as MSHR_HIT before recording
+  bool read_sent  = was_read_sent(events);
+  bool write_sent = was_write_sent(events);
+  bool wa_sent    = was_writeallocate_sent(events);
+
+  cache_request_status rec_status = status;
+  if ((status == MISS || status == SECTOR_MISS) &&
+      !(read_sent || write_sent || wa_sent)) {
+    rec_status = MSHR_HIT;
+  }
+  ////
+
+  // ---- per-kernel L1C/L1T accounting 
   if (mf && mf->has_kernel_uid()) {
     const unsigned kid  = mf->get_kernel_uid();
-    const unsigned smid = m_sid;              // this ldst_unit's SM
+    const unsigned smid = m_sid;
     gpgpu_sim *gpu      = m_core->get_gpu();
 
+    ////  record with rec_status (not raw status)
     if (cache == m_L1C) {
-      gpu->record_kernel_l1c(kid, smid, status);
+      gpu->record_kernel_l1c(kid, smid, rec_status);
     } else if (cache == m_L1T) {
-      gpu->record_kernel_l1t(kid, smid, status);
+      gpu->record_kernel_l1t(kid, smid, rec_status);
     }
+    ////
   }
 
   return process_cache_access(cache, mf->get_addr(), inst, events, mf, status);
 }
+
 
 mem_stage_stall_type ldst_unit::process_memory_access_queue_l1cache(
     l1_cache *cache, warp_inst_t &inst) {
@@ -2235,6 +2302,9 @@ mem_stage_stall_type ldst_unit::process_memory_access_queue_l1cache(
       } else {
         result = BK_CONF;
         m_stats->gpgpu_n_l1cache_bkconflict++;
+        if (mf && mf->has_kernel_uid()) {
+          m_gpu->record_kernel_l1cache_bkconflict(mf->get_kernel_uid());
+        }
         delete mf;
         break;  // do not try again, just break from the loop and try the next
                 // cycle
@@ -2258,6 +2328,9 @@ mem_stage_stall_type ldst_unit::process_memory_access_queue_l1cache(
     // NEW: per-kernel L1D (only for the no-latency path)
     if (mf && mf->has_kernel_uid()) {
       m_core->get_gpu()->record_kernel_l1d(mf->get_kernel_uid(), m_sid, status);
+      // if (was_read_sent(events)) {
+      //   m_core->get_gpu()->record_kernel_mem_read_L1_MISS(mf->get_kernel_uid(), mf->get_inst());
+      // }     
     }
     return process_cache_access(cache, mf->get_addr(), inst, events, mf,
                                 status);
@@ -2268,27 +2341,38 @@ void ldst_unit::L1_latency_queue_cycle() {
   for (unsigned int j = 0; j < m_config->m_L1D_config.l1_banks; j++) {
     if ((l1_latency_queue[j][0]) != NULL) {
       mem_fetch *mf_next = l1_latency_queue[j][0];
-      //(mf_next, mf_next->get_wid());
+
       std::list<cache_event> events;
       enum cache_request_status status =
           m_L1D->access(mf_next->get_addr(), mf_next,
                         m_core->get_gpu()->gpu_sim_cycle +
                             m_core->get_gpu()->gpu_tot_sim_cycle,
                         events);
-    // MY ADDITION 
-    if (mf_next && mf_next->has_kernel_uid()) {
-      const unsigned kid = mf_next->get_kernel_uid();
-      const unsigned core_id = m_sid;   
 
-      m_gpu->record_kernel_l1d(kid, core_id, status);
-    }
-    /////
       bool write_sent = was_write_sent(events);
-      bool read_sent = was_read_sent(events);
+      bool read_sent  = was_read_sent(events);
+
+      //// MY ADDITION detect write-allocate + reclassify merged misses as MSHR_HIT
+      bool wa_sent = was_writeallocate_sent(events);
+
+      cache_request_status rec_status = status;
+      if ((status == MISS || status == SECTOR_MISS) &&
+          !(read_sent || write_sent || wa_sent)) {
+        // Miss reported by cache, but nothing was sent -> merged into an existing MSHR
+        rec_status = MSHR_HIT;
+      }
+
+      // Record per-kernel L1D using the corrected status
+      if (mf_next && mf_next->has_kernel_uid()) {
+        m_core->get_gpu()->record_kernel_l1d(mf_next->get_kernel_uid(), m_sid, rec_status);
+      }
+      ////
+
 
       if (status == HIT) {
         assert(!read_sent);
         l1_latency_queue[j][0] = NULL;
+
         if (mf_next->get_inst().is_load()) {
           for (unsigned r = 0; r < MAX_OUTPUT_VALUES; r++)
             if (mf_next->get_inst().out[r] > 0) {
@@ -2336,9 +2420,11 @@ void ldst_unit::L1_latency_queue_cycle() {
       } else if (status == RESERVATION_FAIL) {
         assert(!read_sent);
         assert(!write_sent);
+
       } else {
-        assert(status == MISS || status == HIT_RESERVED);
+        assert(status == MISS || status == HIT_RESERVED || status == SECTOR_MISS);
         l1_latency_queue[j][0] = NULL;
+
         if (m_config->m_L1D_config.get_write_policy() != WRITE_THROUGH &&
             mf_next->get_inst().is_store() &&
             (m_config->m_L1D_config.get_write_allocate_policy() ==
@@ -2350,8 +2436,10 @@ void ldst_unit::L1_latency_queue_cycle() {
               (m_config->m_L1D_config.get_mshr_type() == SECTOR_ASSOC)
                   ? (mf_next->get_data_size() / SECTOR_SIZE)
                   : 1;
+
           mf_next->set_reply();
           for (unsigned i = 0; i < dec_ack; ++i) m_core->store_ack(mf_next);
+
           if (!write_sent && !read_sent) delete mf_next;
         }
       }
@@ -2394,6 +2482,8 @@ bool ldst_unit::constant_cycle(warp_inst_t &inst, mem_stage_stall_type &rc_fail,
       m_stats->gpgpu_n_cmem_portconflict++;  // coal stalls aren't really a bank
                                              // conflict, but this maintains
                                              // previous behavior.
+      const unsigned kid = m_gpu->kernel_uid_from_stream(inst.get_streamID());    
+      if (kid) m_gpu->record_kernel_cmem_portconflict(kid);
     }
   }
   return inst.accessq_empty();  // done if empty.
@@ -3069,8 +3159,28 @@ void ldst_unit::cycle() {
 
   if (!done) {  // log stall types and return
     assert(rc_fail != NO_RC_FAIL);
+
+    // classic global stats
     m_stats->gpgpu_n_stall_shd_mem++;
     m_stats->gpu_stall_shd_mem_breakdown[type][rc_fail]++;
+
+    //// NEW: per-kernel stats (FIXED)
+    //// pipe_reg often does NOT carry a valid kernel_uid here -> recover from warp mapping.
+    if (!pipe_reg.empty()) {
+      unsigned kid = pipe_reg.get_kernel_uid();
+
+      //// if unset/invalid, recover using shader_core_ctx warp->kernel map
+      if (kid == 0 || kid == (unsigned)-1) {
+        kid = m_core->get_warp_kernel_uid(pipe_reg.warp_id());
+      }
+      ////
+
+      if (kid) {
+        m_core->get_gpu()->record_kernel_stall_shd_mem(kid, type, rc_fail);
+      }
+    }
+    ////
+
     return;
   }
 
@@ -3084,11 +3194,6 @@ void ldst_unit::cycle() {
           m_dispatch_reg->clear();
         }
       } else {
-        // if( pipe_reg.active_count() > 0 ) {
-        //    if( !m_operand_collector->writeback(pipe_reg) )
-        //        return;
-        //}
-
         bool pending_requests = false;
         for (unsigned r = 0; r < MAX_OUTPUT_VALUES; r++) {
           unsigned reg_id = pipe_reg.out[r];
@@ -3111,7 +3216,6 @@ void ldst_unit::cycle() {
 
           // release LDGSTS
           if (m_dispatch_reg->m_is_ldgsts) {
-            // m_pending_ldgsts[m_dispatch_reg->warp_id()][m_dispatch_reg->pc][m_dispatch_reg->get_addr(0)]--;
             if (m_pending_ldgsts[m_dispatch_reg->warp_id()][m_dispatch_reg->pc]
                                 [m_dispatch_reg->get_addr(0)] == 0) {
               m_core->unset_depbar(*m_dispatch_reg);
@@ -4957,6 +5061,10 @@ void simt_core_cluster::icnt_inject_request_packet(class mem_fetch *mf) {
     packet_size = mf->get_ctrl_size();
   }
   m_stats->m_outgoing_traffic_stats->record_traffic(mf, packet_size);
+  if (mf && mf->has_kernel_uid()) {
+    m_gpu->record_kernel_outgoing_traffic(mf->get_kernel_uid(), mf, packet_size);
+  }
+
   unsigned destination = mf->get_sub_partition_id();
   mf->set_status(IN_ICNT_TO_MEM,
                  m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
@@ -4974,6 +5082,7 @@ void simt_core_cluster::update_icnt_stats(class mem_fetch *mf) {
     m_stats->made_write_mfs++;
   else
     m_stats->made_read_mfs++;
+
   switch (mf->get_access_type()) {
     case CONST_ACC_R:
       m_stats->gpgpu_n_mem_const++;
@@ -4984,8 +5093,6 @@ void simt_core_cluster::update_icnt_stats(class mem_fetch *mf) {
     case GLOBAL_ACC_R:
       m_stats->gpgpu_n_mem_read_global++;
       break;
-    // case GLOBAL_ACC_R: m_stats->gpgpu_n_mem_read_global++;
-    // printf("read_global%d\n",m_stats->gpgpu_n_mem_read_global); break;
     case GLOBAL_ACC_W:
       m_stats->gpgpu_n_mem_write_global++;
       break;
@@ -5013,24 +5120,41 @@ void simt_core_cluster::update_icnt_stats(class mem_fetch *mf) {
     default:
       assert(0);
   }
+
+  //// MY ADDITION
+  if (mf && mf->has_kernel_uid()) {
+    m_gpu->record_kernel_icnt_stats(mf->get_kernel_uid(), mf);
+  }
+  ////
 }
 
-void sst_simt_core_cluster::icnt_inject_request_packet_to_SST(
-    class mem_fetch *mf) {
+void sst_simt_core_cluster::icnt_inject_request_packet_to_SST(class mem_fetch *mf) {
+  //// my ADDITION
+  if (mf && !mf->has_kernel_uid()) {
+    unsigned long long sid = mf->get_streamID();
+    auto it = m_gpu->stream_to_kernel_map.find(sid);
+    if (it != m_gpu->stream_to_kernel_map.end()) {
+      mf->set_kernel_uid(it->second);
+    }
+  }
+  ////
+
   // Update stats
   update_icnt_stats(mf);
 
-  // The packet size varies depending on the type of request:
-  // - For write request and atomic request, the packet contains the data
-  // - For read request (i.e. not write nor atomic), the packet only has control
-  // metadata
   unsigned int packet_size = mf->size();
   if (!mf->get_is_write() && !mf->isatomic()) {
     packet_size = mf->get_ctrl_size();
   }
+
   m_stats->m_outgoing_traffic_stats->record_traffic(mf, packet_size);
+  if (mf && mf->has_kernel_uid()) {
+    m_gpu->record_kernel_outgoing_traffic(mf->get_kernel_uid(), mf, packet_size);
+  }
+
   mf->set_status(IN_ICNT_TO_MEM,
                  m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
+
   switch (mf->get_access_type()) {
     case CONST_ACC_R:
     case INST_ACC_R: {
@@ -5044,11 +5168,11 @@ void sst_simt_core_cluster::icnt_inject_request_packet_to_SST(
       else
         ::send_write_request_SST(m_cluster_id, mf->get_addr(),
                                  mf->get_data_size(), (void *)mf);
-
       break;
     }
   }
 }
+
 
 void simt_core_cluster::icnt_cycle() {
   if (!m_response_fifo.empty()) {
@@ -5081,6 +5205,10 @@ void simt_core_cluster::icnt_cycle() {
     unsigned int packet_size =
         (mf->get_is_write()) ? mf->get_ctrl_size() : mf->size();
     m_stats->m_incoming_traffic_stats->record_traffic(mf, packet_size);
+    if (mf && mf->has_kernel_uid()) {
+      m_gpu->record_kernel_incoming_traffic(mf->get_kernel_uid(), mf, packet_size);
+    }
+
     mf->set_status(IN_CLUSTER_TO_SHADER_QUEUE,
                    m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
     // m_memory_stats->memlatstat_read_done(mf,m_shader_config->max_warps_per_shader);
@@ -5124,6 +5252,9 @@ void sst_simt_core_cluster::icnt_cycle_SST() {
     unsigned int packet_size =
         (mf->get_is_write()) ? mf->get_ctrl_size() : mf->size();
     m_stats->m_incoming_traffic_stats->record_traffic(mf, packet_size);
+    if (mf && mf->has_kernel_uid()) {
+      m_gpu->record_kernel_incoming_traffic(mf->get_kernel_uid(), mf, packet_size);
+    }
     mf->set_status(IN_CLUSTER_TO_SHADER_QUEUE,
                    m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
     // m_memory_stats->memlatstat_read_done(mf,m_shader_config->max_warps_per_shader);

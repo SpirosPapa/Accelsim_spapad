@@ -33,6 +33,7 @@
 #ifndef DRAM_H
 #define DRAM_H
 
+#include <unordered_map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <zlib.h>
@@ -45,11 +46,13 @@
 #include <vector>
 #include "delayqueue.h"
 
+
 #define READ 'R'  // define read and write states
 #define WRITE 'W'
 #define BANK_IDLE 'I'
 #define BANK_ACTIVE 'A'
 
+struct kernel_stats_view_t;
 class dram_req_t {
  public:
   dram_req_t(class mem_fetch *data, unsigned banks,
@@ -110,6 +113,7 @@ class mem_fetch;
 class memory_config;
 
 class dram_t {
+ std::vector<dram_req_t*> m_last_mrq_per_bank;
  public:
   dram_t(unsigned int parition_id, const memory_config *config,
          class memory_stats_t *stats, class memory_partition_unit *mp,
@@ -117,6 +121,7 @@ class dram_t {
 
   bool full(bool is_write) const;
   void print(FILE *simFile) const;
+  void print(FILE *simFile,unsigned kid,const kernel_stats_view_t *view) const;
   void visualize() const;
   void print_stat(FILE *simFile);
   unsigned que_length() const;
@@ -143,6 +148,9 @@ class dram_t {
   const memory_config *m_config;
 
  private:
+  //MY ADDITION
+  std::unordered_map<unsigned, unsigned long long> m_outstanding_reqs_by_kid;
+
   bankgrp_t **bkgrp;
 
   bank_t **bk;

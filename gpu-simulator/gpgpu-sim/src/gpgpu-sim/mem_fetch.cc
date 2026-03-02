@@ -85,12 +85,19 @@ mem_fetch::mem_fetch(const mem_access_t &access, const warp_inst_t *inst,
   }
 
   // ---- Kernel attribution concurrency-safe ----
-  if (original_mf && original_mf->has_kernel_uid()) {
-    m_kernel_uid = original_mf->get_kernel_uid();
-  } else if (original_wr_mf && original_wr_mf->has_kernel_uid()) {
-    m_kernel_uid = original_wr_mf->get_kernel_uid();
-  } else {
-    m_kernel_uid = kInvalidKernelUid;
+
+  if (inst) {
+    unsigned kid = inst->get_kernel_uid();
+    if (kid != kInvalidKernelUid) {
+      m_kernel_uid = kid;
+    }
+  }
+  if (m_kernel_uid == kInvalidKernelUid) {
+    if (original_mf && original_mf->has_kernel_uid()) {
+      m_kernel_uid = original_mf->get_kernel_uid();
+    } else if (original_wr_mf && original_wr_mf->has_kernel_uid()) {
+      m_kernel_uid = original_wr_mf->get_kernel_uid();
+    }
   }
 
 }

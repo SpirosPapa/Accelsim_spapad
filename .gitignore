@@ -15,3 +15,14 @@ gpu-simulator/accel_sim.pyi
 compile_commands.json
 .cachecuda-samples/
 util/tuner/GPU_Microbenchmark/A30_bin/
+
+# ===== Don't commit trace dumps (huge) =====
+*.trace
+*.trace.*
+*.traceg
+*.traceg.*
+**/traces/**/*.trace*
+**/traces/**/*.traceg*
+
+# Avoid accidentally adding nested git internals (e.g. cuda-samples/.git/)
+**/.git/

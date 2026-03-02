@@ -31,6 +31,8 @@
 
 #include <list>
 #include <map>
+#include <unordered_map>
+#include <vector>
 #include "dram.h"
 #include "gpu-misc.h"
 #include "gpu-sim.h"
@@ -68,6 +70,9 @@ class frfcfs_scheduler {
 
   enum memory_mode m_mode;
   memory_stats_t *m_stats;
+  // [ADDED] For each bank: during the current open-row episode,
+  // count how many requests each kernel served.
+  std::vector<std::unordered_map<unsigned, unsigned>> m_episode_kid_accesses;
 };
 
 #endif

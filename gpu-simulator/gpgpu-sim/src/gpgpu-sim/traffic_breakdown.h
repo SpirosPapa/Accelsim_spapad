@@ -11,7 +11,7 @@ class traffic_breakdown {
       : m_network_name(network_name) {}
 
   // print the stats
-  void print(FILE* fout);
+  void print(FILE* fout) const;
 
   // record the amount and type of traffic introduced by this mem_fetch object
   void record_traffic(class mem_fetch* mf, unsigned int size);

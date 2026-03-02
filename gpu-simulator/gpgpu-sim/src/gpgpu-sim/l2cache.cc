@@ -423,6 +423,46 @@ void memory_partition_unit::print(FILE *fp) const {
   m_dram->print(fp);
 }
 
+void memory_partition_unit::print(FILE *fp, unsigned kid,const kernel_stats_view_t *view) const {
+  fprintf(fp, "Memory Partition %u (kid=%u): \n", m_id, kid);
+
+  // Print each sub-partition but filter the request tracker by kid
+  for (unsigned p = 0; p < m_config->m_n_sub_partition_per_memory_channel; p++) {
+    m_sub_partition[p]->print(fp, kid);
+  }
+
+  // DRAM latency queue is also live state; filter by kid
+  size_t total = m_dram_latency_queue.size();
+  size_t match = 0;
+  for (auto it = m_dram_latency_queue.begin(); it != m_dram_latency_queue.end(); ++it) {
+    mem_fetch *mf = it->req;
+    if (!mf) continue;
+    if (!mf->has_kernel_uid()) continue;
+    if (mf->get_kernel_uid() != kid) continue;
+    match++;
+  }
+
+  fprintf(fp, "In Dram Latency Queue (total = %zu, matching kid = %zu): \n", total, match);
+
+  for (auto it = m_dram_latency_queue.begin(); it != m_dram_latency_queue.end(); ++it) {
+    mem_fetch *mf = it->req;
+
+    // Only print matching kid entries
+    if (!mf) continue;
+    if (!mf->has_kernel_uid()) continue;
+    if (mf->get_kernel_uid() != kid) continue;
+
+    fprintf(fp, "Ready @ %llu - ", it->ready_cycle);
+    mf->print(fp);
+  }
+
+  // NOTE: m_dram->print(fp) is GLOBAL counters + derived global metrics.
+  // We will do step 2 later: add dram_t::print(fp, kid, view) so Row_Buffer_Locality/BLP
+  // can come from your per-kernel accum/view arrays.
+  m_dram->print(fp,kid,view);
+}
+
+
 memory_sub_partition::memory_sub_partition(unsigned sub_partition_id,
                                            const memory_config *config,
                                            class memory_stats_t *stats,
@@ -645,6 +685,37 @@ void memory_sub_partition::print(FILE *fp) const {
   }
   if (!m_config->m_L2_config.disabled()) m_L2cache->display_state(fp);
 }
+
+
+void memory_sub_partition::print(FILE *fp, unsigned kid) const {
+  // Filter the pending request tracker by kernel uid
+  if (!m_request_tracker.empty()) {
+    bool printed_header = false;
+
+    for (auto it = m_request_tracker.begin(); it != m_request_tracker.end(); ++it) {
+      mem_fetch *mf = *it;
+      if (!mf) continue;
+
+      // If mf has no kid, we skip it in kid-filtered mode
+      if (!mf->has_kernel_uid()) continue;
+      if (mf->get_kernel_uid() != kid) continue;
+
+      if (!printed_header) {
+        fprintf(fp, "Memory Sub Partition %u: pending memory requests (kid=%u):\n",
+                m_id, kid);
+        printed_header = true;
+      }
+      mf->print(fp);
+    }
+  }
+
+  // NOTE: display_state() is GLOBAL instantaneous cache state.
+  // For now we keep it (useful while single-kernel); later we can add a kid-filtered
+  // version if you decide to track kid per MSHR entry / line / writeback.
+  if (!m_config->m_L2_config.disabled()) m_L2cache->display_state(fp,kid);
+}
+
+
 
 void memory_stats_t::visualizer_print(gzFile visualizer_file) {
   gzprintf(visualizer_file, "Ltwowritemiss: %d\n", L2_write_miss);
