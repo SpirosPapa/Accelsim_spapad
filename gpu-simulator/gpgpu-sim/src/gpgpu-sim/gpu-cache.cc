@@ -1290,9 +1290,21 @@ void baseline_cache::cycle() {
       m_memport->push(mf);
     }
   }
+
   bool data_port_busy = !m_bandwidth_management.data_port_free();
   bool fill_port_busy = !m_bandwidth_management.fill_port_free();
+
+  // global (vanilla)
   m_stats.sample_cache_port_utility(data_port_busy, fill_port_busy);
+
+  // [KID] per-kernel L2 port util (windowed-global semantics, like your DRAM cycle attribution)
+  if (m_gpu && m_name.size() >= 2 && m_name[0] == 'L' && m_name[1] == '2') {
+    for (kernel_info_t *kinfo : m_gpu->get_running_kernels()) {
+      if (!kinfo) continue;
+      m_gpu->record_kernel_l2_port_utility(kinfo->get_uid(), data_port_busy, fill_port_busy);
+    }
+  }
+
   m_bandwidth_management.replenish_port_bandwidth();
 }
 
@@ -1445,6 +1457,13 @@ void baseline_cache::send_read_request(new_addr_type addr,
 
     m_mshrs.add(mshr_addr, mf);
     m_stats.inc_stats(mf->get_access_type(), MSHR_HIT, mf->get_streamID());
+    if (mf && mf->has_kernel_uid() && m_name.size() >= 2 && m_name[0]=='L' && m_name[1]=='2') {
+      m_gpu->record_kernel_l2_cache_breakdown(
+          mf->get_kernel_uid(),
+          (enum mem_access_type)mf->get_access_type(),
+          MSHR_HIT,
+          mf->get_streamID());
+    }
     do_miss = true;
 
   } else if (!mshr_hit && mshr_avail &&
@@ -2111,12 +2130,43 @@ enum cache_request_status l1_cache::access(new_addr_type addr, mem_fetch *mf,
 // The l2 cache access function calls the base data_cache access
 // implementation.  When the L2 needs to diverge from L1, L2 specific
 // changes should be made here.
+// MY ADDITION
 enum cache_request_status l2_cache::access(new_addr_type addr, mem_fetch *mf,
                                            unsigned time,
                                            std::list<cache_event> &events) {
-  return data_cache::access(addr, mf, time, events);
-}
+  assert(mf->get_data_size() <= m_config.get_atom_sz());
+  bool wr = mf->get_is_write();
+  new_addr_type block_addr = m_config.block_addr(addr);
+  unsigned cache_index = (unsigned)-1;
 
+  enum cache_request_status probe_status =
+      m_tag_array->probe(block_addr, cache_index, mf, mf->is_write(), true);
+
+  enum cache_request_status access_status =
+      process_tag_probe(wr, probe_status, addr, cache_index, mf, time, events);
+
+  const enum cache_request_status stats_status =
+      m_stats.select_stats_status(probe_status, access_status);
+
+  m_stats.inc_stats(mf->get_access_type(), stats_status, mf->get_streamID());
+  m_stats.inc_stats_pw(mf->get_access_type(), stats_status, mf->get_streamID());
+
+  // [KID] per-kernel L2 bank stats + L2 breakdown
+  if (mf && mf->has_kernel_uid()) {
+    const unsigned kid = mf->get_kernel_uid();
+    const unsigned spid = mf->get_sub_partition_id();  // bank index in print loop
+    m_gpu->record_kernel_l2_bank_access(kid, spid, stats_status);
+
+    m_gpu->record_kernel_l2_cache_breakdown(
+        kid,
+        (enum mem_access_type)mf->get_access_type(),
+        stats_status,
+        mf->get_streamID());
+  }
+
+  return access_status;
+}
+// END MY ADDITION
 /// Access function for tex_cache
 /// return values: RESERVATION_FAIL if request could not be accepted
 /// otherwise returns HIT_RESERVED or MISS; NOTE: *never* returns HIT

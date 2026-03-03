@@ -490,7 +490,7 @@ void accel_sim_framework::start_job(const std::string &trace_dir,
     std::cout << job.sm_ids[i];
   }
   std::cout << "}" << std::endl;
-
+  m_gpgpu_sim->reset_cluster_round_robin();
   job.parser = std::make_unique<trace_parser>(kernelslist_path.c_str());
   job.commandlist       = job.parser->parse_commandlist_file();
   job.commandlist_index = 0;

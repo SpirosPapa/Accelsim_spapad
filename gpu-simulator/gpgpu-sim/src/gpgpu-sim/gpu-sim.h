@@ -394,7 +394,10 @@ struct kernel_stats_accum_t {
   std::vector<unsigned long long> dram_last_n_cmd;      // size = n_mem
   std::vector<unsigned long long> dram_last_n_activity; // size = n_mem
   std::vector<unsigned long long> dram_last_bwutil;     // size = n_mem
+  std::vector<cache_cnt_t> l2_bank;
 
+  // L2 breakdown + fail breakdown (per-kernel)
+  cache_stats l2_cache_stats;
 
 };
 
@@ -575,6 +578,13 @@ struct kernel_stats_view_t {
   const unsigned long long *dram_util_bins = nullptr; // n_mem*10
   const unsigned long long *dram_eff_bins  = nullptr; // n_mem*10
 
+  std::vector<cache_cnt_t> l2_bank;
+
+  const cache_stats *l2_cache_stats = nullptr;
+
+  unsigned long long icnt_total_pkts_mem_to_simt  = 0;
+  unsigned long long icnt_total_pkts_simt_to_mem  = 0;
+
 };
 
 
@@ -595,7 +605,18 @@ struct l1d_ports_rec_t {
   std::vector<bool> allowed_sm; // size=n_simt_clusters, true if kernel can run there
 };
 
+struct icnt_snap_t {
+  unsigned long long simt_to_mem = 0;
+  unsigned long long mem_to_simt = 0;
+};
 
+struct icnt_rec_t {
+  bool have_begin = false;
+  bool have_end   = false;
+  icnt_snap_t begin;
+  icnt_snap_t end;
+  std::vector<bool> allowed_sm; // cluster==SM when n_simt_cores_per_cluster==1
+};
 
 
 class gpgpu_sim;  //forward decl
@@ -986,7 +1007,7 @@ class gpgpu_sim : public gpgpu_t {
   unsigned finished_kernel();
   void set_kernel_done(kernel_info_t *kernel);
   void stop_all_running_kernels();
-
+  void reset_cluster_round_robin();
 
     // --- Per-kernel / per-job accounting helpers (NEW) --------------------
   // These are implemented in gpu-sim.cc and are used by the daemon / driver
@@ -1159,6 +1180,43 @@ class gpgpu_sim : public gpgpu_t {
 
   // called once per “stat interval” (or at kernel end) to bin util/eff
   void record_kernel_dram_util_eff_bins_interval(unsigned kid, unsigned dram_id);
+
+  void record_kernel_l2_bank_access(unsigned kid,unsigned global_sub_partition_id,cache_request_status stats_status);
+
+
+
+  void record_kernel_l2_cache_breakdown(unsigned kid,
+                                        enum mem_access_type type,
+                                        enum cache_request_status st,
+                                        unsigned long long streamID);
+
+  void record_kernel_l2_cache_fail_breakdown(unsigned kid,
+                                             enum mem_access_type type,
+                                             enum cache_reservation_fail_reason fr,
+                                             unsigned long long streamID);
+
+  void record_kernel_l2_port_utility(unsigned kid, bool data_busy, bool fill_busy);
+
+  static inline void bump_l2_substats_style(cache_cnt_t &c,
+                                            cache_request_status s) {
+    switch (s) {
+      case HIT:
+      case MISS:
+      case SECTOR_MISS:
+      case HIT_RESERVED:
+        c.access++;
+        if (s == MISS || s == SECTOR_MISS) c.miss++;
+        if (s == HIT_RESERVED) c.pending_hit++;
+        break;
+      case RESERVATION_FAIL:
+        c.resfail++;
+        break;
+      default:
+        // do nothing (e.g. MSHR_HIT is intentionally not counted in get_sub_stats)
+        break;
+    }
+  }
+
   // SM -> kernel uid owner (0 = none)
   std::vector<unsigned> m_sm_owner_kid;
 
@@ -1338,6 +1396,14 @@ class gpgpu_sim : public gpgpu_t {
   void clear_executed_kernel_info();  //< clear the kernel information after
                                       // stat printout
   void snapshot_l1d_ports_per_cluster(std::vector<port_snap_t>& out) const;
+  static inline icnt_snap_t snap_icnt_for_cluster(simt_core_cluster* cl) {
+    long stm = 0, mts = 0;
+    cl->get_icnt_stats(stm, mts);
+    icnt_snap_t s;
+    s.simt_to_mem = (stm < 0) ? 0ULL : (unsigned long long)stm;
+    s.mem_to_simt = (mts < 0) ? 0ULL : (unsigned long long)mts;
+    return s;
+  }
   virtual void createSIMTCluster() = 0;
 
  public:
@@ -1428,6 +1494,7 @@ class gpgpu_sim : public gpgpu_t {
 
   std::unordered_map<unsigned, kernel_stats_accum_t> m_kernel_stats_;
   std::unordered_map<unsigned, l1d_ports_rec_t> m_l1d_ports_rec;
+  std::unordered_map<unsigned, icnt_rec_t> m_icnt_rec;
 
   // -------------------------------------------------------------------------
   // Per-kernel scheduler issue distro recorder 

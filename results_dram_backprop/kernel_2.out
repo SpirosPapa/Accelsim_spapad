@@ -22,7 +22,7 @@ L2_BW  =     901.7294 GB/Sec
 L2_BW_total  =     901.7294 GB/Sec
 L2_BW  calculated_by_classic=    1408.4972 GB/Sec
 L2_BW_total  calculated_by_classic=    1408.4972 GB/Sec
-gpu_total_sim_rate=250772
+gpu_total_sim_rate=228681
 
 ========= Core cache stats =========
 L1I_cache:
@@ -2123,66 +2123,66 @@ dram_eff_bins: 0 0 0 0 0 0 0 0 0 0
 mrqq: max=22 avg=1.22674
 
 ========= L2 cache stats =========
-L2_cache_bank[0]: Access = 20400, Miss = 6147, Miss_rate = 0.301, Pending_hits = 156, Reservation_fails = 0
-L2_cache_bank[1]: Access = 20391, Miss = 6144, Miss_rate = 0.301, Pending_hits = 161, Reservation_fails = 0
-L2_cache_bank[2]: Access = 20395, Miss = 6144, Miss_rate = 0.301, Pending_hits = 162, Reservation_fails = 0
-L2_cache_bank[3]: Access = 20395, Miss = 6144, Miss_rate = 0.301, Pending_hits = 157, Reservation_fails = 0
-L2_cache_bank[4]: Access = 20392, Miss = 6144, Miss_rate = 0.301, Pending_hits = 164, Reservation_fails = 0
-L2_cache_bank[5]: Access = 20393, Miss = 6144, Miss_rate = 0.301, Pending_hits = 155, Reservation_fails = 0
-L2_cache_bank[6]: Access = 20397, Miss = 6144, Miss_rate = 0.301, Pending_hits = 174, Reservation_fails = 0
-L2_cache_bank[7]: Access = 20393, Miss = 6144, Miss_rate = 0.301, Pending_hits = 158, Reservation_fails = 0
-L2_cache_bank[8]: Access = 20561, Miss = 6147, Miss_rate = 0.299, Pending_hits = 173, Reservation_fails = 401
-L2_cache_bank[9]: Access = 20394, Miss = 6144, Miss_rate = 0.301, Pending_hits = 153, Reservation_fails = 0
-L2_cache_bank[10]: Access = 20387, Miss = 6144, Miss_rate = 0.301, Pending_hits = 152, Reservation_fails = 0
-L2_cache_bank[11]: Access = 20396, Miss = 6144, Miss_rate = 0.301, Pending_hits = 161, Reservation_fails = 0
-L2_cache_bank[12]: Access = 20395, Miss = 6144, Miss_rate = 0.301, Pending_hits = 155, Reservation_fails = 0
-L2_cache_bank[13]: Access = 20393, Miss = 6144, Miss_rate = 0.301, Pending_hits = 179, Reservation_fails = 0
-L2_cache_bank[14]: Access = 20394, Miss = 6144, Miss_rate = 0.301, Pending_hits = 149, Reservation_fails = 0
-L2_cache_bank[15]: Access = 20394, Miss = 6144, Miss_rate = 0.301, Pending_hits = 171, Reservation_fails = 0
-L2_cache_bank[16]: Access = 20407, Miss = 6148, Miss_rate = 0.301, Pending_hits = 159, Reservation_fails = 0
-L2_cache_bank[17]: Access = 20414, Miss = 6148, Miss_rate = 0.301, Pending_hits = 164, Reservation_fails = 0
-L2_cache_bank[18]: Access = 20409, Miss = 6148, Miss_rate = 0.301, Pending_hits = 159, Reservation_fails = 0
-L2_cache_bank[19]: Access = 20410, Miss = 6148, Miss_rate = 0.301, Pending_hits = 161, Reservation_fails = 0
-L2_cache_bank[20]: Access = 20413, Miss = 6148, Miss_rate = 0.301, Pending_hits = 170, Reservation_fails = 0
-L2_cache_bank[21]: Access = 20412, Miss = 6148, Miss_rate = 0.301, Pending_hits = 170, Reservation_fails = 0
-L2_cache_bank[22]: Access = 20411, Miss = 6148, Miss_rate = 0.301, Pending_hits = 170, Reservation_fails = 0
-L2_cache_bank[23]: Access = 20409, Miss = 6148, Miss_rate = 0.301, Pending_hits = 156, Reservation_fails = 0
-L2_cache_bank[24]: Access = 20392, Miss = 6144, Miss_rate = 0.301, Pending_hits = 167, Reservation_fails = 0
-L2_cache_bank[25]: Access = 20398, Miss = 6144, Miss_rate = 0.301, Pending_hits = 169, Reservation_fails = 0
-L2_cache_bank[26]: Access = 20394, Miss = 6144, Miss_rate = 0.301, Pending_hits = 160, Reservation_fails = 0
-L2_cache_bank[27]: Access = 20390, Miss = 6144, Miss_rate = 0.301, Pending_hits = 161, Reservation_fails = 0
-L2_cache_bank[28]: Access = 20398, Miss = 6144, Miss_rate = 0.301, Pending_hits = 161, Reservation_fails = 0
-L2_cache_bank[29]: Access = 20398, Miss = 6144, Miss_rate = 0.301, Pending_hits = 166, Reservation_fails = 0
-L2_cache_bank[30]: Access = 20393, Miss = 6144, Miss_rate = 0.301, Pending_hits = 152, Reservation_fails = 0
-L2_cache_bank[31]: Access = 20398, Miss = 6144, Miss_rate = 0.301, Pending_hits = 170, Reservation_fails = 0
-L2_cache_bank[32]: Access = 20386, Miss = 6144, Miss_rate = 0.301, Pending_hits = 166, Reservation_fails = 0
-L2_cache_bank[33]: Access = 20376, Miss = 6140, Miss_rate = 0.301, Pending_hits = 158, Reservation_fails = 0
-L2_cache_bank[34]: Access = 20376, Miss = 6140, Miss_rate = 0.301, Pending_hits = 162, Reservation_fails = 0
-L2_cache_bank[35]: Access = 20372, Miss = 6140, Miss_rate = 0.301, Pending_hits = 171, Reservation_fails = 0
-L2_cache_bank[36]: Access = 20373, Miss = 6140, Miss_rate = 0.301, Pending_hits = 157, Reservation_fails = 0
-L2_cache_bank[37]: Access = 20377, Miss = 6140, Miss_rate = 0.301, Pending_hits = 153, Reservation_fails = 0
-L2_cache_bank[38]: Access = 20373, Miss = 6140, Miss_rate = 0.301, Pending_hits = 175, Reservation_fails = 0
-L2_cache_bank[39]: Access = 20374, Miss = 6140, Miss_rate = 0.301, Pending_hits = 178, Reservation_fails = 0
-L2_cache_bank[40]: Access = 20388, Miss = 6144, Miss_rate = 0.301, Pending_hits = 166, Reservation_fails = 0
-L2_cache_bank[41]: Access = 20388, Miss = 6144, Miss_rate = 0.301, Pending_hits = 144, Reservation_fails = 0
-L2_cache_bank[42]: Access = 20390, Miss = 6144, Miss_rate = 0.301, Pending_hits = 164, Reservation_fails = 0
-L2_cache_bank[43]: Access = 20388, Miss = 6144, Miss_rate = 0.301, Pending_hits = 171, Reservation_fails = 0
-L2_cache_bank[44]: Access = 20390, Miss = 6144, Miss_rate = 0.301, Pending_hits = 154, Reservation_fails = 0
-L2_cache_bank[45]: Access = 20392, Miss = 6144, Miss_rate = 0.301, Pending_hits = 167, Reservation_fails = 0
-L2_cache_bank[46]: Access = 20393, Miss = 6144, Miss_rate = 0.301, Pending_hits = 159, Reservation_fails = 0
-L2_cache_bank[47]: Access = 20388, Miss = 6144, Miss_rate = 0.301, Pending_hits = 172, Reservation_fails = 0
-L2_total_cache_accesses = 979040
-L2_total_cache_misses = 294922
-L2_total_cache_miss_rate = 0.3012
-L2_total_cache_pending_hits = 7812
+L2_cache_bank[0]: Access = 13057, Miss = 2903, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[1]: Access = 13049, Miss = 2900, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[2]: Access = 13052, Miss = 2900, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[3]: Access = 13051, Miss = 2900, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[4]: Access = 13050, Miss = 2900, Miss_rate = 0.222, Pending_hits = 70, Reservation_fails = 0
+L2_cache_bank[5]: Access = 13051, Miss = 2900, Miss_rate = 0.222, Pending_hits = 73, Reservation_fails = 0
+L2_cache_bank[6]: Access = 13053, Miss = 2900, Miss_rate = 0.222, Pending_hits = 77, Reservation_fails = 0
+L2_cache_bank[7]: Access = 13050, Miss = 2900, Miss_rate = 0.222, Pending_hits = 70, Reservation_fails = 0
+L2_cache_bank[8]: Access = 13218, Miss = 2903, Miss_rate = 0.220, Pending_hits = 76, Reservation_fails = 401
+L2_cache_bank[9]: Access = 13050, Miss = 2900, Miss_rate = 0.222, Pending_hits = 69, Reservation_fails = 0
+L2_cache_bank[10]: Access = 13046, Miss = 2900, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[11]: Access = 13052, Miss = 2900, Miss_rate = 0.222, Pending_hits = 77, Reservation_fails = 0
+L2_cache_bank[12]: Access = 13051, Miss = 2900, Miss_rate = 0.222, Pending_hits = 68, Reservation_fails = 0
+L2_cache_bank[13]: Access = 13051, Miss = 2900, Miss_rate = 0.222, Pending_hits = 81, Reservation_fails = 0
+L2_cache_bank[14]: Access = 13051, Miss = 2900, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[15]: Access = 13050, Miss = 2900, Miss_rate = 0.222, Pending_hits = 76, Reservation_fails = 0
+L2_cache_bank[16]: Access = 13061, Miss = 2902, Miss_rate = 0.222, Pending_hits = 69, Reservation_fails = 0
+L2_cache_bank[17]: Access = 13061, Miss = 2900, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[18]: Access = 13059, Miss = 2900, Miss_rate = 0.222, Pending_hits = 70, Reservation_fails = 0
+L2_cache_bank[19]: Access = 13059, Miss = 2900, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[20]: Access = 13060, Miss = 2900, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[21]: Access = 13060, Miss = 2900, Miss_rate = 0.222, Pending_hits = 77, Reservation_fails = 0
+L2_cache_bank[22]: Access = 13060, Miss = 2900, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[23]: Access = 13057, Miss = 2900, Miss_rate = 0.222, Pending_hits = 70, Reservation_fails = 0
+L2_cache_bank[24]: Access = 13057, Miss = 2900, Miss_rate = 0.222, Pending_hits = 75, Reservation_fails = 0
+L2_cache_bank[25]: Access = 13062, Miss = 2900, Miss_rate = 0.222, Pending_hits = 78, Reservation_fails = 0
+L2_cache_bank[26]: Access = 13057, Miss = 2900, Miss_rate = 0.222, Pending_hits = 69, Reservation_fails = 0
+L2_cache_bank[27]: Access = 13056, Miss = 2900, Miss_rate = 0.222, Pending_hits = 75, Reservation_fails = 0
+L2_cache_bank[28]: Access = 13062, Miss = 2900, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[29]: Access = 13061, Miss = 2900, Miss_rate = 0.222, Pending_hits = 75, Reservation_fails = 0
+L2_cache_bank[30]: Access = 13058, Miss = 2900, Miss_rate = 0.222, Pending_hits = 75, Reservation_fails = 0
+L2_cache_bank[31]: Access = 13062, Miss = 2900, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[32]: Access = 13059, Miss = 2904, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[33]: Access = 13055, Miss = 2904, Miss_rate = 0.222, Pending_hits = 75, Reservation_fails = 0
+L2_cache_bank[34]: Access = 13054, Miss = 2904, Miss_rate = 0.222, Pending_hits = 76, Reservation_fails = 0
+L2_cache_bank[35]: Access = 13051, Miss = 2904, Miss_rate = 0.223, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[36]: Access = 13054, Miss = 2904, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[37]: Access = 13055, Miss = 2904, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[38]: Access = 13052, Miss = 2904, Miss_rate = 0.222, Pending_hits = 77, Reservation_fails = 0
+L2_cache_bank[39]: Access = 13053, Miss = 2904, Miss_rate = 0.222, Pending_hits = 78, Reservation_fails = 0
+L2_cache_bank[40]: Access = 13050, Miss = 2904, Miss_rate = 0.223, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[41]: Access = 13053, Miss = 2904, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[42]: Access = 13052, Miss = 2904, Miss_rate = 0.222, Pending_hits = 78, Reservation_fails = 0
+L2_cache_bank[43]: Access = 13050, Miss = 2904, Miss_rate = 0.223, Pending_hits = 73, Reservation_fails = 0
+L2_cache_bank[44]: Access = 13054, Miss = 2904, Miss_rate = 0.222, Pending_hits = 74, Reservation_fails = 0
+L2_cache_bank[45]: Access = 13055, Miss = 2904, Miss_rate = 0.222, Pending_hits = 72, Reservation_fails = 0
+L2_cache_bank[46]: Access = 13055, Miss = 2904, Miss_rate = 0.222, Pending_hits = 71, Reservation_fails = 0
+L2_cache_bank[47]: Access = 13052, Miss = 2904, Miss_rate = 0.222, Pending_hits = 78, Reservation_fails = 0
+L2_total_cache_accesses = 626788
+L2_total_cache_misses = 139272
+L2_total_cache_miss_rate = 0.2222
+L2_total_cache_pending_hits = 3526
 L2_total_cache_reservation_fails = 401
 L2_total_cache_breakdown:
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT] = 160204
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT_RESERVED] = 7812
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][MISS] = 71684
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT] = 156304
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][HIT_RESERVED] = 3526
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][MISS] = 34818
 	L2_cache_stats_breakdown[GLOBAL_ACC_R][RESERVATION_FAIL] = 401
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][SECTOR_MISS] = 215046
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][MSHR_HIT] = 7812
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][SECTOR_MISS] = 104454
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][MSHR_HIT] = 3526
 	L2_cache_stats_breakdown[LOCAL_ACC_R][HIT] = 0
 	L2_cache_stats_breakdown[LOCAL_ACC_R][HIT_RESERVED] = 0
 	L2_cache_stats_breakdown[LOCAL_ACC_R][MISS] = 0
@@ -2201,11 +2201,11 @@ L2_total_cache_breakdown:
 	L2_cache_stats_breakdown[TEXTURE_ACC_R][RESERVATION_FAIL] = 0
 	L2_cache_stats_breakdown[TEXTURE_ACC_R][SECTOR_MISS] = 0
 	L2_cache_stats_breakdown[TEXTURE_ACC_R][MSHR_HIT] = 0
-	L2_cache_stats_breakdown[GLOBAL_ACC_W][HIT] = 516102
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][HIT] = 327686
 	L2_cache_stats_breakdown[GLOBAL_ACC_W][HIT_RESERVED] = 0
-	L2_cache_stats_breakdown[GLOBAL_ACC_W][MISS] = 2048
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][MISS] = 0
 	L2_cache_stats_breakdown[GLOBAL_ACC_W][RESERVATION_FAIL] = 0
-	L2_cache_stats_breakdown[GLOBAL_ACC_W][SECTOR_MISS] = 6144
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][SECTOR_MISS] = 0
 	L2_cache_stats_breakdown[GLOBAL_ACC_W][MSHR_HIT] = 0
 	L2_cache_stats_breakdown[LOCAL_ACC_W][HIT] = 0
 	L2_cache_stats_breakdown[LOCAL_ACC_W][HIT_RESERVED] = 0
@@ -2243,15 +2243,14 @@ L2_total_cache_breakdown:
 	L2_cache_stats_breakdown[L2_WR_ALLOC_R][RESERVATION_FAIL] = 0
 	L2_cache_stats_breakdown[L2_WR_ALLOC_R][SECTOR_MISS] = 0
 	L2_cache_stats_breakdown[L2_WR_ALLOC_R][MSHR_HIT] = 0
-	L2_cache_stats_breakdown[GLOBAL_ACC_R][TOTAL_ACCESS] = 454746
-	L2_cache_stats_breakdown[GLOBAL_ACC_W][TOTAL_ACCESS] = 524294
+	L2_cache_stats_breakdown[GLOBAL_ACC_R][TOTAL_ACCESS] = 299102
+	L2_cache_stats_breakdown[GLOBAL_ACC_W][TOTAL_ACCESS] = 327686
 L2_total_cache_reservation_fail_breakdown:
-	L2_cache_stats_fail_breakdown[GLOBAL_ACC_R][MSHR_MERGE_ENRTY_FAIL] = 401
-L2_cache_data_port_util = 0.199
-L2_cache_fill_port_util = 0.084
+L2_cache_data_port_util = 0.315
+L2_cache_fill_port_util = 0.091
 
-icnt_total_pkts_mem_to_simt=979040
-icnt_total_pkts_simt_to_mem=979040
+icnt_total_pkts_mem_to_simt=626788
+icnt_total_pkts_simt_to_mem=626788
 LD_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ST_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ----------------------------Interconnect-DETAILS------------------------------

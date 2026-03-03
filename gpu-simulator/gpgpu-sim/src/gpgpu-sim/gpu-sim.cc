@@ -1147,6 +1147,30 @@ kernel_stats_view_t gpgpu_sim::make_kernel_stats_view(unsigned kernel_uid) const
   v.dram_util_bins  = a->dram_util_bins.empty() ? nullptr : a->dram_util_bins.data();
   v.dram_eff_bins   = a->dram_eff_bins.empty()  ? nullptr : a->dram_eff_bins.data();
   
+  v.l2_bank = a->l2_bank;
+
+  v.l2_cache_stats = &a->l2_cache_stats;
+
+    // ---- ICNT packet totals (per-kernel) ----
+  {
+    auto it = m_icnt_rec.find(kernel_uid);
+    if (it != m_icnt_rec.end()) {
+      const auto &r = it->second;
+      if (r.have_begin && r.have_end) {
+        v.icnt_total_pkts_simt_to_mem =
+            (r.end.simt_to_mem >= r.begin.simt_to_mem)
+                ? (r.end.simt_to_mem - r.begin.simt_to_mem)
+                : 0ULL;
+
+        v.icnt_total_pkts_mem_to_simt =
+            (r.end.mem_to_simt >= r.begin.mem_to_simt)
+                ? (r.end.mem_to_simt - r.begin.mem_to_simt)
+                : 0ULL;
+      }
+    }
+  }
+
+
   return v;
 }
 
@@ -1165,6 +1189,7 @@ void gpgpu_sim::clear_kernel_stats(unsigned kernel_uid) {
   kernel_stall_icnt2sh.erase(kernel_uid);
   //
   m_sched_issue_rec_.erase(kernel_uid);
+  m_icnt_rec.erase(kernel_uid);
 }
 
 
@@ -2104,47 +2129,84 @@ void gpgpu_sim::gpu_print_stat(unsigned long long streamID,
 
   // L2 cache stats
   if (!m_memory_config->m_L2_config.disabled()) {
-    cache_stats l2_stats;
-    struct cache_sub_stats l2_css;
-    struct cache_sub_stats total_l2_css;
-    l2_stats.clear();
-    l2_css.clear();
-    total_l2_css.clear();
+      cache_stats l2_stats;
+      struct cache_sub_stats l2_css;
+      struct cache_sub_stats total_l2_css;
+      l2_stats.clear();
+      l2_css.clear();
+      total_l2_css.clear();
 
     printf("\n========= L2 cache stats =========\n");
     for (unsigned i = 0; i < m_memory_config->m_n_mem_sub_partition; i++) {
-      m_memory_sub_partition[i]->accumulate_L2cache_stats(l2_stats);
-      m_memory_sub_partition[i]->get_L2cache_sub_stats(l2_css);
 
-      fprintf(stdout,
-              "L2_cache_bank[%d]: Access = %llu, Miss = %llu, Miss_rate = "
-              "%.3lf, Pending_hits = %llu, Reservation_fails = %llu\n",
-              i, l2_css.accesses, l2_css.misses,
-              (double)l2_css.misses / (double)l2_css.accesses,
-              l2_css.pending_hits, l2_css.res_fails);
+      if (view && single_kernel_uid >= 0 && i < view->l2_bank.size()) {
+        const cache_cnt_t &c = view->l2_bank[i];
 
-      total_l2_css += l2_css;
+        fprintf(stdout,
+                "L2_cache_bank[%d]: Access = %llu, Miss = %llu, Miss_rate = "
+                "%.3lf, Pending_hits = %llu, Reservation_fails = %llu\n",
+                i, c.access, c.miss,
+                (double)c.miss / (double)c.access,
+                c.pending_hit, c.resfail);
+
+        total_l2_css.accesses     += c.access;
+        total_l2_css.misses       += c.miss;
+        total_l2_css.pending_hits += c.pending_hit;
+        total_l2_css.res_fails    += c.resfail;
+
+      } else {
+        // legacy/global behavior
+        m_memory_sub_partition[i]->accumulate_L2cache_stats(l2_stats);
+        m_memory_sub_partition[i]->get_L2cache_sub_stats(l2_css);
+
+        fprintf(stdout,
+                "L2_cache_bank[%d]: Access = %llu, Miss = %llu, Miss_rate = "
+                "%.3lf, Pending_hits = %llu, Reservation_fails = %llu\n",
+                i, l2_css.accesses, l2_css.misses,
+                (double)l2_css.misses / (double)l2_css.accesses,
+                l2_css.pending_hits, l2_css.res_fails);
+
+        total_l2_css += l2_css;
+      }
     }
+
     if (!m_memory_config->m_L2_config.disabled() &&
         m_memory_config->m_L2_config.get_num_lines()) {
-      // L2c_print_cache_stat();
+
       printf("L2_total_cache_accesses = %llu\n", total_l2_css.accesses);
       printf("L2_total_cache_misses = %llu\n", total_l2_css.misses);
       if (total_l2_css.accesses > 0)
         printf("L2_total_cache_miss_rate = %.4lf\n",
-               (double)total_l2_css.misses / (double)total_l2_css.accesses);
+              (double)total_l2_css.misses / (double)total_l2_css.accesses);
       printf("L2_total_cache_pending_hits = %llu\n", total_l2_css.pending_hits);
-      printf("L2_total_cache_reservation_fails = %llu\n",
-             total_l2_css.res_fails);
-      printf("L2_total_cache_breakdown:\n");
-      l2_stats.print_stats(stdout, streamID, "L2_cache_stats_breakdown");
-      printf("L2_total_cache_reservation_fail_breakdown:\n");
-      l2_stats.print_fail_stats(stdout, streamID,
-                                "L2_cache_stats_fail_breakdown");
-      total_l2_css.print_port_stats(stdout, "L2_cache");
+      printf("L2_total_cache_reservation_fails = %llu\n", total_l2_css.res_fails);
+
+      if (view && single_kernel_uid >= 0 && view->l2_cache_stats) {
+        printf("L2_total_cache_breakdown:\n");
+        view->l2_cache_stats->print_stats(stdout, streamID, "L2_cache_stats_breakdown");
+
+        printf("L2_total_cache_reservation_fail_breakdown:\n");
+        view->l2_cache_stats->print_fail_stats(
+            stdout, streamID, "L2_cache_stats_fail_breakdown");
+
+        struct cache_sub_stats k_css;
+        k_css.clear();
+        view->l2_cache_stats->get_sub_stats(k_css);
+        k_css.print_port_stats(stdout, "L2_cache");
+        // NOTE: port stats are global-only unless you also build per-kernel port counters.
+        // So either skip them here (recommended) or knowingly print the global ones.
+      } else {
+        // legacy/global behavior
+        printf("L2_total_cache_breakdown:\n");
+        l2_stats.print_stats(stdout, streamID, "L2_cache_stats_breakdown");
+
+        printf("L2_total_cache_reservation_fail_breakdown:\n");
+        l2_stats.print_fail_stats(stdout, streamID, "L2_cache_stats_fail_breakdown");
+
+        total_l2_css.print_port_stats(stdout, "L2_cache");
+      }
     }
   }
-
   if (m_config.gpgpu_cflog_interval != 0) {
     spill_log_to_file(stdout, 1, gpu_sim_cycle);
     insn_warp_occ_print(stdout);
@@ -2163,17 +2225,24 @@ void gpgpu_sim::gpu_print_stat(unsigned long long streamID,
   }
 #endif
 
-  long total_simt_to_mem = 0;
-  long total_mem_to_simt = 0;
-  long temp_stm = 0;
-  long temp_mts = 0;
-  for (unsigned i = 0; i < m_config.num_cluster(); i++) {
-    m_cluster[i]->get_icnt_stats(temp_stm, temp_mts);
-    total_simt_to_mem += temp_stm;
-    total_mem_to_simt += temp_mts;
+  if (view && single_kernel_uid >= 0) {
+    printf("\nicnt_total_pkts_mem_to_simt=%llu\n",
+           view->icnt_total_pkts_mem_to_simt);
+    printf("icnt_total_pkts_simt_to_mem=%llu\n",
+           view->icnt_total_pkts_simt_to_mem);
+  } else {
+    long total_simt_to_mem = 0;
+    long total_mem_to_simt = 0;
+    long temp_stm = 0;
+    long temp_mts = 0;
+    for (unsigned i = 0; i < m_config.num_cluster(); i++) {
+      m_cluster[i]->get_icnt_stats(temp_stm, temp_mts);
+      total_simt_to_mem += temp_stm;
+      total_mem_to_simt += temp_mts;
+    }
+    printf("\nicnt_total_pkts_mem_to_simt=%ld\n", total_mem_to_simt);
+    printf("icnt_total_pkts_simt_to_mem=%ld\n", total_simt_to_mem);
   }
-  printf("\nicnt_total_pkts_mem_to_simt=%ld\n", total_mem_to_simt);
-  printf("icnt_total_pkts_simt_to_mem=%ld\n", total_simt_to_mem);
 
   time_vector_print();
   fflush(stdout);
@@ -3020,6 +3089,30 @@ void gpgpu_sim::note_kernel_launch(kernel_info_t* k) {
 
   // Track "current kernel per stream"
   stream_to_kernel_map[streamID] = kid;
+
+  // ---------------- ICNT begin snapshot (per-kernel) ----------------
+  {
+    auto &rec = m_icnt_rec[kid];
+    const unsigned nC = m_shader_config->n_simt_clusters;
+
+    // cluster==SM assumption (your current setup)
+    rec.allowed_sm.assign(nC, false);
+    for (unsigned sid = 0; sid < nC; ++sid) {
+      if (k->is_sm_allowed(sid)) rec.allowed_sm[sid] = true;
+    }
+
+    // sum ICNT stats over the clusters this kernel is allowed to use
+    icnt_snap_t sum;
+    for (unsigned cid = 0; cid < nC; ++cid) {
+      if (!rec.allowed_sm[cid]) continue;
+      icnt_snap_t s = snap_icnt_for_cluster(m_cluster[cid]);
+      sum.simt_to_mem += s.simt_to_mem;
+      sum.mem_to_simt += s.mem_to_simt;
+    }
+
+    rec.begin = sum;
+    rec.have_begin = true;
+  }
   auto &rec = m_sched_issue_rec_[kid];
   rec.sampling_core = -1;
   rec.distro.clear();
@@ -3030,6 +3123,29 @@ void gpgpu_sim::note_kernel_completion(kernel_info_t* k) {
   unbind_kernel_from_sms(k->get_uid());
   const unsigned long long streamID = k->get_streamID();
   const unsigned kid = k->get_uid();
+
+    // ---------------- ICNT end snapshot (per-kernel) ----------------
+  {
+    auto it2 = m_icnt_rec.find(kid);
+    if (it2 != m_icnt_rec.end()) {
+      auto &rec = it2->second;
+      const unsigned nC = m_shader_config->n_simt_clusters;
+
+      icnt_snap_t sum;
+      for (unsigned cid = 0; cid < nC; ++cid) {
+        if (!rec.allowed_sm.empty()) {
+          if (cid >= rec.allowed_sm.size()) continue;
+          if (!rec.allowed_sm[cid]) continue;
+        }
+        icnt_snap_t s = snap_icnt_for_cluster(m_cluster[cid]);
+        sum.simt_to_mem += s.simt_to_mem;
+        sum.mem_to_simt += s.mem_to_simt;
+      }
+
+      rec.end = sum;
+      rec.have_end = true;
+    }
+  }
 
   auto it = stream_to_kernel_map.find(streamID);
   if (it != stream_to_kernel_map.end() && it->second == kid) {
@@ -3942,4 +4058,48 @@ void gpgpu_sim::record_kernel_dram_util_eff_bins_interval(unsigned kid,
 
   a.dram_util_bins[dram_id * 10 + clamp_bin_0_9(util_pct)]++;
   a.dram_eff_bins [dram_id * 10 + clamp_bin_0_9(eff_pct)]++;
+}
+
+void gpgpu_sim::record_kernel_l2_bank_access(unsigned kid,
+                                            unsigned global_spid,
+                                            cache_request_status stats_status) {
+  if (!kid) return;
+
+  auto &a = kernel_stats_mut_(kid);
+
+  if (a.l2_bank.empty())
+    a.l2_bank.resize(m_memory_config->m_n_mem_sub_partition);
+
+  if (global_spid >= a.l2_bank.size()) return;
+
+  bump_l2_substats_style(a.l2_bank[global_spid], stats_status);
+}
+
+void gpgpu_sim::reset_cluster_round_robin() {
+  m_last_cluster_issue = m_shader_config->n_simt_clusters - 1;
+}
+
+
+void gpgpu_sim::record_kernel_l2_cache_breakdown(unsigned kid,
+                                                enum mem_access_type type,
+                                                enum cache_request_status st,
+                                                unsigned long long streamID) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).l2_cache_stats.inc_stats((int)type, (int)st, streamID);
+}
+
+void gpgpu_sim::record_kernel_l2_cache_fail_breakdown(
+    unsigned kid,
+    enum mem_access_type type,
+    enum cache_reservation_fail_reason fr,
+    unsigned long long streamID) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).l2_cache_stats.inc_fail_stats((int)type, (int)fr, streamID);
+}
+
+void gpgpu_sim::record_kernel_l2_port_utility(unsigned kid,
+                                              bool data_busy,
+                                              bool fill_busy) {
+  if (!kid) return;
+  kernel_stats_mut_(kid).l2_cache_stats.sample_cache_port_utility(data_busy, fill_busy);
 }

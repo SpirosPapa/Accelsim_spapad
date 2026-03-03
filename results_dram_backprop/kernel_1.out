@@ -22,7 +22,7 @@ L2_BW  =     418.4633 GB/Sec
 L2_BW_total  =     418.4633 GB/Sec
 L2_BW  calculated_by_classic=     418.4633 GB/Sec
 L2_BW_total  calculated_by_classic=     418.4633 GB/Sec
-gpu_total_sim_rate=235962
+gpu_total_sim_rate=216612
 
 ========= Core cache stats =========
 L1I_cache:
