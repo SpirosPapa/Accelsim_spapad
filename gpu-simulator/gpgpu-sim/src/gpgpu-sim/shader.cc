@@ -2527,34 +2527,50 @@ bool ldst_unit::memory_cycle(warp_inst_t &inst,
     unsigned control_size =
         inst.is_store() ? WRITE_PACKET_SIZE : READ_PACKET_SIZE;
     unsigned size = access.get_size() + control_size;
-    // printf("Interconnect:Addr: %x, size=%d\n",access.get_addr(),size);
+
+    mem_fetch *mf = nullptr;
+
+    // For non-SST, create the mf before the fullness check so we can attribute
+    // per-kernel Req_Network_in_buffer_full correctly.
+    if (!m_memory_config->SST_mode) {
+      mf = m_mf_allocator->alloc(
+          inst, access,
+          m_core->get_gpu()->gpu_sim_cycle +
+              m_core->get_gpu()->gpu_tot_sim_cycle);
+      tag_mf_kernel(mf, inst.warp_id());
+    }
+
     if (m_memory_config->SST_mode &&
         (static_cast<sst_memory_interface *>(m_icnt)->full(
             size, inst.is_store() || inst.isatomic(), access.get_type()))) {
-      // SST need mf type here
-      // Cast it to sst_memory_interface pointer first as this full() method
-      // is not a virtual method in parent class
       stall_cond = ICNT_RC_FAIL;
     } else if (!m_memory_config->SST_mode &&
-               (m_icnt->full(size, inst.is_store() || inst.isatomic()))) {
+               (static_cast<shader_memory_interface *>(m_icnt)->full(
+                   size, inst.is_store() || inst.isatomic(), mf))) {
+      if (mf) delete mf;   // not injected this cycle
       stall_cond = ICNT_RC_FAIL;
     } else {
-      mem_fetch *mf =
-          m_mf_allocator->alloc(inst, access,
-                                m_core->get_gpu()->gpu_sim_cycle +
-                                    m_core->get_gpu()->gpu_tot_sim_cycle);
-      tag_mf_kernel(mf, inst.warp_id());
+      // SST reaches here with mf == nullptr, so allocate it now.
+      if (!mf) {
+        mf = m_mf_allocator->alloc(
+            inst, access,
+            m_core->get_gpu()->gpu_sim_cycle +
+                m_core->get_gpu()->gpu_tot_sim_cycle);
+        tag_mf_kernel(mf, inst.warp_id());
+      }
+
       m_icnt->push(mf);
       inst.accessq_pop_back();
-      // inst.clear_active( access.get_warp_mask() );
+
       if (inst.is_load()) {
         for (unsigned r = 0; r < MAX_OUTPUT_VALUES; r++)
           if (inst.out[r] > 0)
             assert(m_pending_writes[inst.warp_id()][inst.out[r]] > 0);
-      } else if (inst.is_store())
+      } else if (inst.is_store()) {
         m_core->inc_store_req(inst.warp_id());
+      }
     }
-  } else {
+  }else {
     assert(CACHE_UNDEFINED != inst.cache_op);
     stall_cond = process_memory_access_queue_l1cache(m_L1D, inst);
   }
@@ -5020,10 +5036,31 @@ void simt_core_cluster::cache_invalidate() {
     m_core[i]->cache_invalidate();
 }
 
-bool simt_core_cluster::icnt_injection_buffer_full(unsigned size, bool write) {
+bool simt_core_cluster::icnt_injection_buffer_full(unsigned size, bool write,
+                                                   const mem_fetch *mf) {
   unsigned request_size = size;
   if (!write) request_size = READ_PACKET_SIZE;
-  return !::icnt_has_buffer(m_cluster_id, request_size);
+
+  const bool full = !::icnt_has_buffer(m_cluster_id, request_size);
+
+  if (full && mf) {
+    unsigned kid = 0;
+    if (mf->has_kernel_uid()) {
+      kid = mf->get_kernel_uid();
+    } else {
+      kid = m_gpu->kernel_uid_from_stream(mf->get_streamID());
+    }
+
+    if (kid) {
+      icnt_record_req_net_in_buffer_full(kid, 1);
+    }
+  }
+
+  return full;
+}
+
+bool simt_core_cluster::icnt_injection_buffer_full(unsigned size, bool write) {
+  return icnt_injection_buffer_full(size, write, nullptr);
 }
 
 bool sst_simt_core_cluster::SST_injection_buffer_full(unsigned size, bool write,

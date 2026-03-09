@@ -30,7 +30,7 @@
 #define ICNT_WRAPPER_H
 
 #include <stdio.h>
-
+class gpgpu_sim;
 // functional interface to the interconnect
 
 typedef void (*icnt_create_p)(unsigned n_shader, unsigned n_mem);
@@ -48,6 +48,53 @@ typedef void (*icnt_display_state_p)(FILE* fp);
 typedef unsigned (*icnt_get_flit_size_p)();
 
 typedef void* (*icnt_peek_p)(unsigned output);
+
+
+//MY ADDITION INTERCONNECT
+void icnt_set_stats_gpu(gpgpu_sim *gpu);
+
+void icnt_record_req_net_packets(unsigned kernel_uid,
+                                 unsigned long long n = 1);
+void icnt_record_req_net_cycles(unsigned kernel_uid,
+                                unsigned long long n = 1);
+void icnt_record_req_net_conflicts(unsigned kernel_uid,
+                                   unsigned long long n = 1);
+void icnt_record_req_net_conflicts_util(unsigned kernel_uid,
+                                        unsigned long long n = 1);
+void icnt_record_req_net_cycles_util(unsigned kernel_uid,
+                                     unsigned long long n = 1);
+void icnt_record_req_net_reqs_util(unsigned kernel_uid,
+                                   unsigned long long n = 1);
+void icnt_record_req_net_in_buffer_full(unsigned kernel_uid,
+                                        unsigned long long n = 1);
+void icnt_record_req_net_in_buffer_util(unsigned kernel_uid,
+                                        unsigned long long n = 1);
+void icnt_record_req_net_out_buffer_full(unsigned kernel_uid,
+                                         unsigned long long n = 1);
+void icnt_record_req_net_out_buffer_util(unsigned kernel_uid,
+                                         unsigned long long n = 1);
+//reply
+void icnt_record_reply_net_packets(unsigned kernel_uid,
+                                   unsigned long long n = 1);
+void icnt_record_reply_net_cycles(unsigned kernel_uid,
+                                  unsigned long long n = 1);
+void icnt_record_reply_net_conflicts(unsigned kernel_uid,
+                                     unsigned long long n = 1);
+void icnt_record_reply_net_conflicts_util(unsigned kernel_uid,
+                                          unsigned long long n = 1);
+void icnt_record_reply_net_cycles_util(unsigned kernel_uid,
+                                       unsigned long long n = 1);
+void icnt_record_reply_net_reqs_util(unsigned kernel_uid,
+                                     unsigned long long n = 1);
+void icnt_record_reply_net_in_buffer_full(unsigned kernel_uid,
+                                          unsigned long long n = 1);
+void icnt_record_reply_net_in_buffer_util(unsigned kernel_uid,
+                                          unsigned long long n = 1);
+void icnt_record_reply_net_out_buffer_full(unsigned kernel_uid,
+                                           unsigned long long n = 1);
+void icnt_record_reply_net_out_buffer_util(unsigned kernel_uid,
+                                           unsigned long long n = 1);
+//// MY ADDITION ENDS
 
 extern icnt_peek_p icnt_peek;
 

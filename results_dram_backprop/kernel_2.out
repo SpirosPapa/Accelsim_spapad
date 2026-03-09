@@ -22,7 +22,7 @@ L2_BW  =     901.7294 GB/Sec
 L2_BW_total  =     901.7294 GB/Sec
 L2_BW  calculated_by_classic=    1408.4972 GB/Sec
 L2_BW_total  calculated_by_classic=    1408.4972 GB/Sec
-gpu_total_sim_rate=228681
+gpu_total_sim_rate=226831
 
 ========= Core cache stats =========
 L1I_cache:
@@ -2254,25 +2254,25 @@ icnt_total_pkts_simt_to_mem=626788
 LD_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ST_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ----------------------------Interconnect-DETAILS------------------------------
-Req_Network_injected_packets_num = 979040
-Req_Network_cycles = 70821
-Req_Network_injected_packets_per_cycle =      13.8241 
-Req_Network_conflicts_per_cycle =       9.6981
-Req_Network_conflicts_per_cycle_util =      13.6290
-Req_Bank_Level_Parallism =      19.4273
+Req_Network_injected_packets_num = 626788
+Req_Network_cycles = 32030
+Req_Network_injected_packets_per_cycle =      19.5688
+Req_Network_conflicts_per_cycle =      18.1293
+Req_Network_conflicts_per_cycle_util =      26.1086
+Req_Bank_Level_Parallism =      28.1816
 Req_Network_in_buffer_full_per_cycle =       0.0000
-Req_Network_in_buffer_avg_util =      69.6418
+Req_Network_in_buffer_avg_util =     152.3750
 Req_Network_out_buffer_full_per_cycle =       0.0000
-Req_Network_out_buffer_avg_util =       0.3517
+Req_Network_out_buffer_avg_util =       0.5486
 
-Reply_Network_injected_packets_num = 979040
-Reply_Network_cycles = 70821
-Reply_Network_injected_packets_per_cycle =       13.8241
-Reply_Network_conflicts_per_cycle =        9.8388
-Reply_Network_conflicts_per_cycle_util =      13.8264
-Reply_Bank_Level_Parallism =      19.4269
+Reply_Network_injected_packets_num = 626788
+Reply_Network_cycles = 32030
+Reply_Network_injected_packets_per_cycle =      19.5688
+Reply_Network_conflicts_per_cycle =      12.4382
+Reply_Network_conflicts_per_cycle_util =      17.9368
+Reply_Bank_Level_Parallism =      28.2197
 Reply_Network_in_buffer_full_per_cycle =       0.0000
-Reply_Network_in_buffer_avg_util =      22.2485
+Reply_Network_in_buffer_avg_util =      47.8008
 Reply_Network_out_buffer_full_per_cycle =       0.0000
-Reply_Network_out_buffer_avg_util =       0.2469
+Reply_Network_out_buffer_avg_util =       0.3494
 ----------------------------END-of-Interconnect-DETAILS-----------------------

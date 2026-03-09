@@ -1170,6 +1170,34 @@ kernel_stats_view_t gpgpu_sim::make_kernel_stats_view(unsigned kernel_uid) const
     }
   }
 
+  // ---- Req interconnect DETAIL stats (per-kernel) ----
+  v.req_net_packets_num        = a->req_net_packets_num;
+  v.req_net_cycles             =  v.gpu_sim_cycle; 
+  v.req_net_conflicts          = a->req_net_conflicts;
+  v.req_net_conflicts_util     = a->req_net_conflicts_util;
+  v.req_net_cycles_util        = a->req_net_cycles_util;
+  v.req_net_reqs_util          = a->req_net_reqs_util;
+  v.req_net_in_buffer_full     = a->req_net_in_buffer_full;
+  v.req_net_in_buffer_util     = a->req_net_in_buffer_util;
+  v.req_net_out_buffer_full    = a->req_net_out_buffer_full;
+  v.req_net_out_buffer_util    = a->req_net_out_buffer_util;
+  v.req_net_active_in_buffers  = a->req_net_active_in_buffers;
+  v.req_net_active_out_buffers = a->req_net_active_out_buffers;
+
+
+  // ---- Reply interconnect DETAIL stats (per-kernel) ----
+  v.reply_net_packets_num        = a->reply_net_packets_num;
+  v.reply_net_cycles             = v.gpu_sim_cycle;  
+  v.reply_net_conflicts          = a->reply_net_conflicts;
+  v.reply_net_conflicts_util     = a->reply_net_conflicts_util;
+  v.reply_net_cycles_util        = a->reply_net_cycles_util;
+  v.reply_net_reqs_util          = a->reply_net_reqs_util;
+  v.reply_net_in_buffer_full     = a->reply_net_in_buffer_full;
+  v.reply_net_in_buffer_util     = a->reply_net_in_buffer_util;
+  v.reply_net_out_buffer_full    = a->reply_net_out_buffer_full;
+  v.reply_net_out_buffer_util    = a->reply_net_out_buffer_util;
+  v.reply_net_active_in_buffers  = a->reply_net_active_in_buffers;
+  v.reply_net_active_out_buffers = a->reply_net_active_out_buffers;
 
   return v;
 }
@@ -1444,6 +1472,7 @@ gpgpu_sim::gpgpu_sim(const gpgpu_sim_config &config, gpgpu_context *ctx)
     }
 
     icnt_wrapper_init();
+    icnt_set_stats_gpu(this);
     icnt_create(m_shader_config->n_simt_clusters,
                 m_memory_config->m_n_mem_sub_partition);
   }
@@ -1669,6 +1698,169 @@ PowerscalingCoefficients *gpgpu_sim::get_scaling_coeffs() {
   return m_gpgpusim_wrapper->get_scaling_coeffs();
 }
 
+static inline double safe_div_u64(unsigned long long n,
+                                  unsigned long long d) {
+  return d ? (double)n / (double)d : 0.0;
+}
+
+static inline double safe_div_u64_u64_u64(unsigned long long n,
+                                          unsigned long long d1,
+                                          unsigned long long d2) {
+  return (d1 && d2) ? ((double)n / (double)d1 / (double)d2) : 0.0;
+}
+
+void gpgpu_sim::print_req_net_kernel_stats(const kernel_stats_view_t *v) const {
+  const unsigned long long packets =
+      (v->req_net_packets_num == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_packets_num;
+  const unsigned long long cycles =
+      (v->gpu_sim_cycle == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->gpu_sim_cycle;
+  const unsigned long long conflicts =
+      (v->req_net_conflicts == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_conflicts;
+  const unsigned long long conflicts_util =
+      (v->req_net_conflicts_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_conflicts_util;
+  const unsigned long long cycles_util =
+      (v->req_net_cycles_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_cycles_util;
+  const unsigned long long reqs_util =
+      (v->req_net_reqs_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_reqs_util;
+  const unsigned long long in_full =
+      (v->req_net_in_buffer_full == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_in_buffer_full;
+  const unsigned long long in_util =
+      (v->req_net_in_buffer_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_in_buffer_util;
+  const unsigned long long out_full =
+      (v->req_net_out_buffer_full == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_out_buffer_full;
+  const unsigned long long out_util =
+      (v->req_net_out_buffer_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_out_buffer_util;
+  const unsigned long long in_bufs =
+      (v->req_net_active_in_buffers == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_active_in_buffers;
+  const unsigned long long out_bufs =
+      (v->req_net_active_out_buffers == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->req_net_active_out_buffers;
+
+  printf("Req_Network_injected_packets_num = %llu\n", packets);
+  printf("Req_Network_cycles = %llu\n", cycles);
+  printf("Req_Network_injected_packets_per_cycle = %12.4f\n",
+         safe_div_u64(packets, cycles));
+  printf("Req_Network_conflicts_per_cycle = %12.4f\n",
+         safe_div_u64(conflicts, cycles));
+  printf("Req_Network_conflicts_per_cycle_util = %12.4f\n",
+         safe_div_u64(conflicts_util, cycles_util));
+  printf("Req_Bank_Level_Parallism = %12.4f\n",
+         safe_div_u64(reqs_util, cycles_util));
+  printf("Req_Network_in_buffer_full_per_cycle = %12.4f\n",
+         safe_div_u64(in_full, cycles));
+  printf("Req_Network_in_buffer_avg_util = %12.4f\n",
+         safe_div_u64_u64_u64(in_util, cycles, in_bufs));
+  printf("Req_Network_out_buffer_full_per_cycle = %12.4f\n",
+         safe_div_u64(out_full, cycles));
+  printf("Req_Network_out_buffer_avg_util = %12.4f\n",
+         safe_div_u64_u64_u64(out_util, cycles, out_bufs));
+}
+
+void gpgpu_sim::print_reply_net_kernel_stats(const kernel_stats_view_t *v) const {
+  const unsigned long long packets =
+      (v->reply_net_packets_num == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_packets_num;
+
+  const unsigned long long cycles =
+      (v->reply_net_cycles == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_cycles;
+
+  const unsigned long long conflicts =
+      (v->reply_net_conflicts == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_conflicts;
+
+  const unsigned long long conflicts_util =
+      (v->reply_net_conflicts_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_conflicts_util;
+
+  const unsigned long long cycles_util =
+      (v->reply_net_cycles_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_cycles_util;
+
+  const unsigned long long reqs_util =
+      (v->reply_net_reqs_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_reqs_util;
+
+  const unsigned long long in_full =
+      (v->reply_net_in_buffer_full == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_in_buffer_full;
+
+  const unsigned long long in_util =
+      (v->reply_net_in_buffer_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_in_buffer_util;
+
+  const unsigned long long out_full =
+      (v->reply_net_out_buffer_full == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_out_buffer_full;
+
+  const unsigned long long out_util =
+      (v->reply_net_out_buffer_util == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_out_buffer_util;
+
+  const unsigned long long in_bufs =
+      (v->reply_net_active_in_buffers == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_active_in_buffers;
+
+  const unsigned long long out_bufs =
+      (v->reply_net_active_out_buffers == kernel_stats_view_t::kUnset)
+          ? 0ULL
+          : (unsigned long long)v->reply_net_active_out_buffers;
+
+  printf("\n");
+  printf("Reply_Network_injected_packets_num = %llu\n", packets);
+  printf("Reply_Network_cycles = %llu\n", cycles);
+  printf("Reply_Network_injected_packets_per_cycle = %12.4f\n",
+         safe_div_u64(packets, cycles));
+  printf("Reply_Network_conflicts_per_cycle = %12.4f\n",
+         safe_div_u64(conflicts, cycles));
+  printf("Reply_Network_conflicts_per_cycle_util = %12.4f\n",
+         safe_div_u64(conflicts_util, cycles_util));
+  printf("Reply_Bank_Level_Parallism = %12.4f\n",
+         safe_div_u64(reqs_util, cycles_util));
+  printf("Reply_Network_in_buffer_full_per_cycle = %12.4f\n",
+         safe_div_u64(in_full, cycles));
+  printf("Reply_Network_in_buffer_avg_util = %12.4f\n",
+         safe_div_u64_u64_u64(in_util, cycles, in_bufs));
+  printf("Reply_Network_out_buffer_full_per_cycle = %12.4f\n",
+         safe_div_u64(out_full, cycles));
+  printf("Reply_Network_out_buffer_avg_util = %12.4f\n",
+         safe_div_u64_u64_u64(out_util, cycles, out_bufs));
+}
+
 void gpgpu_sim::print_stats(unsigned long long streamID) {
   // Legacy entry point: no per-kernel override, no explicit kernel name/uid.
   gpgpu_ctx->stats->ptx_file_line_stats_write_file();
@@ -1710,8 +1902,13 @@ void gpgpu_sim::print_stats(unsigned long long streamID,
 
   if (g_network_mode) {
     printf("----------------------------Interconnect-DETAILS------------------------------\n");
-    icnt_display_stats();
-    icnt_display_overall_stats();
+    if (view && single_kernel_uid >= 0) {
+      print_req_net_kernel_stats(view);   
+      print_reply_net_kernel_stats(view);
+    } else {
+      icnt_display_stats();
+      icnt_display_overall_stats();
+    }
     printf("----------------------------END-of-Interconnect-DETAILS-----------------------\n");
   }
 }
@@ -2625,7 +2822,9 @@ void gpgpu_sim::cycle() {
           partiton_replys_in_parallel_per_cycle++;
         } else {
           gpu_stall_icnt2sh++;
-
+          if (mf && mf->has_kernel_uid()) {
+            record_kernel_reply_net_in_buffer_full(mf->get_kernel_uid(), 1);
+          }
           // NEW: per-kernel stall attribution
           if (mf->has_kernel_uid()) {
             record_kernel_stall_icnt2sh(mf->get_kernel_uid(), 1);
@@ -3109,13 +3308,35 @@ void gpgpu_sim::note_kernel_launch(kernel_info_t* k) {
       sum.simt_to_mem += s.simt_to_mem;
       sum.mem_to_simt += s.mem_to_simt;
     }
+  // ---------------- Req-NET static denominators (per-kernel) ----------------
+    {
+      auto &a = kernel_stats_mut_(kid);
 
+      a.req_net_active_in_buffers = 0;
+      const unsigned nC = m_shader_config->n_simt_clusters;
+      for (unsigned sid = 0; sid < nC; ++sid) {
+        if (k->is_sm_allowed(sid)) a.req_net_active_in_buffers++;
+      }
+
+      // Must match icnt_create(..., m_n_mem_sub_partition)
+      a.req_net_active_out_buffers = m_memory_config->m_n_mem_sub_partition;
+    }
+        // ---------------- Reply-NET static denominators (per-kernel) ----------------
+    auto &a = kernel_stats_mut_(kid);
+    a.reply_net_active_in_buffers = m_memory_config->m_n_mem_sub_partition;
+
+    a.reply_net_active_out_buffers = 0;
+    for (unsigned sid = 0; sid < nC; ++sid) {
+      if (k->is_sm_allowed(sid)) a.reply_net_active_out_buffers++;
+    }
     rec.begin = sum;
     rec.have_begin = true;
   }
   auto &rec = m_sched_issue_rec_[kid];
   rec.sampling_core = -1;
   rec.distro.clear();
+
+
 }
 
 void gpgpu_sim::note_kernel_completion(kernel_info_t* k) {
@@ -4102,4 +4323,125 @@ void gpgpu_sim::record_kernel_l2_port_utility(unsigned kid,
                                               bool fill_busy) {
   if (!kid) return;
   kernel_stats_mut_(kid).l2_cache_stats.sample_cache_port_utility(data_busy, fill_busy);
+}
+
+
+void gpgpu_sim::record_kernel_req_net_packets(unsigned kernel_uid,
+                                              unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_packets_num += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_cycles(unsigned kernel_uid,
+                                             unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_cycles += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_conflicts(unsigned kernel_uid,
+                                                unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_conflicts += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_conflicts_util(unsigned kernel_uid,
+                                                     unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_conflicts_util += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_cycles_util(unsigned kernel_uid,
+                                                  unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_cycles_util += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_reqs_util(unsigned kernel_uid,
+                                                unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_reqs_util += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_in_buffer_full(unsigned kernel_uid,
+                                                     unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_in_buffer_full += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_in_buffer_util(unsigned kernel_uid,
+                                                     unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_in_buffer_util += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_out_buffer_full(unsigned kernel_uid,
+                                                      unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_out_buffer_full += n;
+}
+
+void gpgpu_sim::record_kernel_req_net_out_buffer_util(unsigned kernel_uid,
+                                                      unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).req_net_out_buffer_util += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_packets(unsigned kernel_uid,
+                                                unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_packets_num += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_cycles(unsigned kernel_uid,
+                                               unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_cycles += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_conflicts(unsigned kernel_uid,
+                                                  unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_conflicts += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_conflicts_util(unsigned kernel_uid,
+                                                       unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_conflicts_util += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_cycles_util(unsigned kernel_uid,
+                                                    unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_cycles_util += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_reqs_util(unsigned kernel_uid,
+                                                  unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_reqs_util += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_in_buffer_full(unsigned kernel_uid,
+                                                       unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_in_buffer_full += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_in_buffer_util(unsigned kernel_uid,
+                                                       unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_in_buffer_util += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_out_buffer_full(unsigned kernel_uid,
+                                                        unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_out_buffer_full += n;
+}
+
+void gpgpu_sim::record_kernel_reply_net_out_buffer_util(unsigned kernel_uid,
+                                                        unsigned long long n) {
+  if (!kernel_uid) return;
+  kernel_stats_mut_(kernel_uid).reply_net_out_buffer_util += n;
 }

@@ -1283,9 +1283,12 @@ bool baseline_cache::bandwidth_management::fill_port_free() const {
 
 /// Sends next request to lower level of memory
 void baseline_cache::cycle() {
-  if (!m_miss_queue.empty()) {
+  if (!m_miss_queue.empty()) {  
     mem_fetch *mf = m_miss_queue.front();
-    if (!m_memport->full(mf->size(), mf->get_is_write())) {
+
+  bool port_full = m_memport->full(mf->size(), mf->get_is_write());
+
+    if (!port_full) {
       m_miss_queue.pop_front();
       m_memport->push(mf);
     }
@@ -2216,10 +2219,12 @@ enum cache_request_status tex_cache::access(new_addr_type addr, mem_fetch *mf,
 
 void tex_cache::cycle() {
   // send next request to lower level of memory
-  // TODO: Use different full() for sst_mem_interface?
   if (!m_request_fifo.empty()) {
     mem_fetch *mf = m_request_fifo.peek();
-    if (!m_memport->full(mf->get_ctrl_size(), false)) {
+
+  bool port_full = m_memport->full(mf->get_ctrl_size(), false);
+
+    if (!port_full) {
       m_request_fifo.pop();
       m_memport->push(mf);
     }

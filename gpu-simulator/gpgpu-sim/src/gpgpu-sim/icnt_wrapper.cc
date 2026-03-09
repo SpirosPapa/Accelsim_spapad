@@ -31,7 +31,7 @@
 #include "../intersim2/globals.hpp"
 #include "../intersim2/interconnect_interface.hpp"
 #include "local_interconnect.h"
-
+#include "gpu-sim.h"
 
 icnt_peek_p icnt_peek;
 icnt_create_p icnt_create;
@@ -209,4 +209,112 @@ void icnt_wrapper_init() {
       assert(0);
       break;
   }
+}
+
+
+static gpgpu_sim *g_icnt_stats_gpu = nullptr;
+
+void icnt_set_stats_gpu(gpgpu_sim *gpu) {
+  g_icnt_stats_gpu = gpu;
+}
+
+void icnt_record_req_net_packets(unsigned kernel_uid,
+                                 unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_packets(kernel_uid, n);
+}
+
+void icnt_record_req_net_cycles(unsigned kernel_uid,
+                                unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_cycles(kernel_uid, n);
+}
+
+void icnt_record_req_net_conflicts(unsigned kernel_uid,
+                                   unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_conflicts(kernel_uid, n);
+}
+
+void icnt_record_req_net_conflicts_util(unsigned kernel_uid,
+                                        unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_conflicts_util(kernel_uid, n);
+}
+
+void icnt_record_req_net_cycles_util(unsigned kernel_uid,
+                                     unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_cycles_util(kernel_uid, n);
+}
+
+void icnt_record_req_net_reqs_util(unsigned kernel_uid,
+                                   unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_reqs_util(kernel_uid, n);
+}
+
+void icnt_record_req_net_in_buffer_full(unsigned kernel_uid,
+                                        unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_in_buffer_full(kernel_uid, n);
+}
+
+void icnt_record_req_net_in_buffer_util(unsigned kernel_uid,
+                                        unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_in_buffer_util(kernel_uid, n);
+}
+
+void icnt_record_req_net_out_buffer_full(unsigned kernel_uid,
+                                         unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_out_buffer_full(kernel_uid, n);
+}
+
+void icnt_record_req_net_out_buffer_util(unsigned kernel_uid,
+                                         unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_req_net_out_buffer_util(kernel_uid, n);
+}
+
+//reply
+void icnt_record_reply_net_packets(unsigned kernel_uid,
+                                   unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_packets(kernel_uid, n);
+}
+
+void icnt_record_reply_net_cycles(unsigned kernel_uid,
+                                  unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_cycles(kernel_uid, n);
+}
+
+void icnt_record_reply_net_conflicts(unsigned kernel_uid,
+                                     unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_conflicts(kernel_uid, n);
+}
+
+void icnt_record_reply_net_conflicts_util(unsigned kernel_uid,
+                                          unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_conflicts_util(kernel_uid, n);
+}
+
+void icnt_record_reply_net_cycles_util(unsigned kernel_uid,
+                                       unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_cycles_util(kernel_uid, n);
+}
+
+void icnt_record_reply_net_reqs_util(unsigned kernel_uid,
+                                     unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_reqs_util(kernel_uid, n);
+}
+
+void icnt_record_reply_net_in_buffer_full(unsigned kernel_uid,
+                                          unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_in_buffer_full(kernel_uid, n);
+}
+
+void icnt_record_reply_net_in_buffer_util(unsigned kernel_uid,
+                                          unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_in_buffer_util(kernel_uid, n);
+}
+
+void icnt_record_reply_net_out_buffer_full(unsigned kernel_uid,
+                                           unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_out_buffer_full(kernel_uid, n);
+}
+
+void icnt_record_reply_net_out_buffer_util(unsigned kernel_uid,
+                                           unsigned long long n) {
+  if (g_icnt_stats_gpu) g_icnt_stats_gpu->record_kernel_reply_net_out_buffer_util(kernel_uid, n);
 }

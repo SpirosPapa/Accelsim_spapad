@@ -22,7 +22,7 @@ L2_BW  =     418.4633 GB/Sec
 L2_BW_total  =     418.4633 GB/Sec
 L2_BW  calculated_by_classic=     418.4633 GB/Sec
 L2_BW_total  calculated_by_classic=     418.4633 GB/Sec
-gpu_total_sim_rate=216612
+gpu_total_sim_rate=214172
 
 ========= Core cache stats =========
 L1I_cache:
@@ -2254,9 +2254,9 @@ LD_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ST_mem_lat_dist  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ----------------------------Interconnect-DETAILS------------------------------
 Req_Network_injected_packets_num = 352252
-Req_Network_cycles = 38790
-Req_Network_injected_packets_per_cycle =       9.0810 
-Req_Network_conflicts_per_cycle =       2.7365
+Req_Network_cycles = 38789
+Req_Network_injected_packets_per_cycle =       9.0812
+Req_Network_conflicts_per_cycle =       2.7366
 Req_Network_conflicts_per_cycle_util =       3.7703
 Req_Bank_Level_Parallism =      12.5116
 Req_Network_in_buffer_full_per_cycle =       0.0000
@@ -2265,9 +2265,9 @@ Req_Network_out_buffer_full_per_cycle =       0.0000
 Req_Network_out_buffer_avg_util =       0.1892
 
 Reply_Network_injected_packets_num = 352252
-Reply_Network_cycles = 38790
-Reply_Network_injected_packets_per_cycle =        9.0810
-Reply_Network_conflicts_per_cycle =        7.6927
+Reply_Network_cycles = 38789
+Reply_Network_injected_packets_per_cycle =       9.0812
+Reply_Network_conflicts_per_cycle =       7.6929
 Reply_Network_conflicts_per_cycle_util =      10.5872
 Reply_Bank_Level_Parallism =      12.4979
 Reply_Network_in_buffer_full_per_cycle =       0.0000

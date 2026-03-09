@@ -2652,6 +2652,11 @@ class simt_core_cluster {
   void icnt_inject_request_packet(class mem_fetch *mf);
   void update_icnt_stats(class mem_fetch *mf);
 
+
+  //my addition
+  bool icnt_injection_buffer_full(unsigned size, bool write,const mem_fetch *mf);
+  // MY ADDITION
+
   // for perfect memory interface
   bool response_queue_full() {
     return (m_response_fifo.size() >= m_config->n_simt_ejection_buffer_size);
@@ -2764,6 +2769,9 @@ class shader_memory_interface : public mem_fetch_interface {
   }
   virtual bool full(unsigned size, bool write) const {
     return m_cluster->icnt_injection_buffer_full(size, write);
+  }
+  bool full(unsigned size, bool write, const mem_fetch *mf) const {
+    return m_cluster->icnt_injection_buffer_full(size, write, mf);
   }
   virtual void push(mem_fetch *mf) {
     m_core->inc_simt_to_mem(mf->get_num_flits(true));

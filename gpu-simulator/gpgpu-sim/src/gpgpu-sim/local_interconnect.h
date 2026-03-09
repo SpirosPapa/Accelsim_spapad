@@ -33,6 +33,7 @@
 #include <map>
 #include <queue>
 #include <vector>
+#include <unordered_map>
 using namespace std;
 
 enum Interconnect_type { REQ_NET = 0, REPLY_NET = 1 };
@@ -79,6 +80,11 @@ class xbar_router {
   unsigned long long packets_num;
 
  private:
+  // REQ_NET-only occupancy tracking for concurrency-safe per-kernel attribution
+  std::unordered_map<unsigned, unsigned long long> req_in_occ_by_kid;
+  std::unordered_map<unsigned, unsigned long long> req_out_occ_by_kid;
+  std::unordered_map<unsigned, unsigned long long> reply_in_occ_by_kid;
+  std::unordered_map<unsigned, unsigned long long> reply_out_occ_by_kid;
   void iSLIP_Advance();
   void RR_Advance();
 

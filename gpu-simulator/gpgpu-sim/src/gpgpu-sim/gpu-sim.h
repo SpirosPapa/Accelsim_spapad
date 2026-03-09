@@ -399,6 +399,34 @@ struct kernel_stats_accum_t {
   // L2 breakdown + fail breakdown (per-kernel)
   cache_stats l2_cache_stats;
 
+  // ---------------- Req interconnect DETAILS (per-kernel raw counters) ----------------
+  unsigned long long req_net_packets_num        = 0;
+  unsigned long long req_net_cycles             = 0;   // per-cycle presence in REQ network
+  unsigned long long req_net_conflicts          = 0;
+  unsigned long long req_net_conflicts_util     = 0;
+  unsigned long long req_net_cycles_util        = 0;   // per-cycle presence in REQ input side
+  unsigned long long req_net_reqs_util          = 0;
+  unsigned long long req_net_in_buffer_full     = 0;
+  unsigned long long req_net_in_buffer_util     = 0;
+  unsigned long long req_net_out_buffer_full    = 0;
+  unsigned long long req_net_out_buffer_util    = 0;
+  unsigned long long req_net_active_in_buffers  = 0;
+  unsigned long long req_net_active_out_buffers = 0;
+
+  // ---------------- Reply interconnect DETAILS (per-kernel raw counters) ----------------
+  unsigned long long reply_net_packets_num        = 0;
+  unsigned long long reply_net_cycles             = 0;
+  unsigned long long reply_net_conflicts          = 0;
+  unsigned long long reply_net_conflicts_util     = 0;
+  unsigned long long reply_net_cycles_util        = 0;
+  unsigned long long reply_net_reqs_util          = 0;
+  unsigned long long reply_net_in_buffer_full     = 0;
+  unsigned long long reply_net_in_buffer_util     = 0;
+  unsigned long long reply_net_out_buffer_full    = 0;
+  unsigned long long reply_net_out_buffer_util    = 0;
+  unsigned long long reply_net_active_in_buffers  = 0;
+  unsigned long long reply_net_active_out_buffers = 0;
+  
 };
 
 struct kernel_stats_view_t {
@@ -584,6 +612,34 @@ struct kernel_stats_view_t {
 
   unsigned long long icnt_total_pkts_mem_to_simt  = 0;
   unsigned long long icnt_total_pkts_simt_to_mem  = 0;
+
+  // ---------------- Req interconnect DETAILS (per-kernel raw counters) ----------------
+  long long req_net_packets_num        = kUnset;
+  long long req_net_cycles             = kUnset;
+  long long req_net_conflicts          = kUnset;
+  long long req_net_conflicts_util     = kUnset;
+  long long req_net_cycles_util        = kUnset;
+  long long req_net_reqs_util          = kUnset;
+  long long req_net_in_buffer_full     = kUnset;
+  long long req_net_in_buffer_util     = kUnset;
+  long long req_net_out_buffer_full    = kUnset;
+  long long req_net_out_buffer_util    = kUnset;
+  long long req_net_active_in_buffers  = kUnset;
+  long long req_net_active_out_buffers = kUnset;
+
+  // ---------------- Reply interconnect DETAILS (per-kernel raw counters) ----------------
+  long long reply_net_packets_num        = kUnset;
+  long long reply_net_cycles             = kUnset;
+  long long reply_net_conflicts          = kUnset;
+  long long reply_net_conflicts_util     = kUnset;
+  long long reply_net_cycles_util        = kUnset;
+  long long reply_net_reqs_util          = kUnset;
+  long long reply_net_in_buffer_full     = kUnset;
+  long long reply_net_in_buffer_util     = kUnset;
+  long long reply_net_out_buffer_full    = kUnset;
+  long long reply_net_out_buffer_util    = kUnset;
+  long long reply_net_active_in_buffers  = kUnset;
+  long long reply_net_active_out_buffers = kUnset;
 
 };
 
@@ -1196,6 +1252,55 @@ class gpgpu_sim : public gpgpu_t {
                                              unsigned long long streamID);
 
   void record_kernel_l2_port_utility(unsigned kid, bool data_busy, bool fill_busy);
+
+  // ---------------- Req interconnect DETAILS recorders ----------------
+  void record_kernel_req_net_packets(unsigned kernel_uid,
+                                     unsigned long long n = 1);
+  void record_kernel_req_net_cycles(unsigned kernel_uid,
+                                    unsigned long long n = 1);
+  void record_kernel_req_net_conflicts(unsigned kernel_uid,
+                                       unsigned long long n = 1);
+  void record_kernel_req_net_conflicts_util(unsigned kernel_uid,
+                                            unsigned long long n = 1);
+  void record_kernel_req_net_cycles_util(unsigned kernel_uid,
+                                         unsigned long long n = 1);
+  void record_kernel_req_net_reqs_util(unsigned kernel_uid,
+                                       unsigned long long n = 1);
+  void record_kernel_req_net_in_buffer_full(unsigned kernel_uid,
+                                            unsigned long long n = 1);
+  void record_kernel_req_net_in_buffer_util(unsigned kernel_uid,
+                                            unsigned long long n = 1);
+  void record_kernel_req_net_out_buffer_full(unsigned kernel_uid,
+                                             unsigned long long n = 1);
+  void record_kernel_req_net_out_buffer_util(unsigned kernel_uid,
+                                             unsigned long long n = 1);
+
+  // ---------------- Reply interconnect DETAILS recorders ----------------
+  void record_kernel_reply_net_packets(unsigned kernel_uid,
+                                       unsigned long long n = 1);
+  void record_kernel_reply_net_cycles(unsigned kernel_uid,
+                                      unsigned long long n = 1);
+  void record_kernel_reply_net_conflicts(unsigned kernel_uid,
+                                         unsigned long long n = 1);
+  void record_kernel_reply_net_conflicts_util(unsigned kernel_uid,
+                                              unsigned long long n = 1);
+  void record_kernel_reply_net_cycles_util(unsigned kernel_uid,
+                                           unsigned long long n = 1);
+  void record_kernel_reply_net_reqs_util(unsigned kernel_uid,
+                                         unsigned long long n = 1);
+  void record_kernel_reply_net_in_buffer_full(unsigned kernel_uid,
+                                              unsigned long long n = 1);
+  void record_kernel_reply_net_in_buffer_util(unsigned kernel_uid,
+                                              unsigned long long n = 1);
+  void record_kernel_reply_net_out_buffer_full(unsigned kernel_uid,
+                                               unsigned long long n = 1);
+  void record_kernel_reply_net_out_buffer_util(unsigned kernel_uid,
+                                               unsigned long long n = 1);
+
+  void print_reply_net_kernel_stats(const kernel_stats_view_t *view) const;
+
+  void print_req_net_kernel_stats(const kernel_stats_view_t *view) const;
+
 
   static inline void bump_l2_substats_style(cache_cnt_t &c,
                                             cache_request_status s) {
