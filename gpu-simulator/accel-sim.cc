@@ -4,9 +4,88 @@
 #include <cassert>
 #include <fcntl.h>
 #include <unistd.h>
+#include <fstream>
+#include <sstream>
 
 namespace {
+  struct ParsedMigProfile {
+    std::string name;
+    unsigned units = 0;   // A30 quarter-GPU units: 1, 2, or 4
+  };
 
+  static std::string trim_copy(const std::string &s) {
+    const size_t a = s.find_first_not_of(" \t\r\n");
+    if (a == std::string::npos) return "";
+    const size_t b = s.find_last_not_of(" \t\r\n");
+    return s.substr(a, b - a + 1);
+  }
+
+  static bool parse_a30_mig_profile_token(const std::string &tok,
+                                          ParsedMigProfile &out) {
+    const std::string t = trim_copy(tok);
+    if (t == "1g.6gb") {
+      out.name = t;
+      out.units = 1;
+      return true;
+    }
+    if (t == "2g.12gb") {
+      out.name = t;
+      out.units = 2;
+      return true;
+    }
+    if (t == "4g.24gb") {
+      out.name = t;
+      out.units = 4;
+      return true;
+    }
+    return false;
+  }
+
+  static bool parse_a30_mig_tuple(const std::string &spec,
+                                  std::vector<ParsedMigProfile> &out,
+                                  std::string &err) {
+    out.clear();
+    err.clear();
+
+    std::stringstream ss(spec);
+    std::string item;
+    unsigned total_units = 0;
+
+    while (std::getline(ss, item, ',')) {
+      item = trim_copy(item);
+      if (item.empty()) continue;
+
+      ParsedMigProfile p;
+      if (!parse_a30_mig_profile_token(item, p)) {
+        err = "unsupported A30 MIG profile token: '" + item + "'";
+        out.clear();
+        return false;
+      }
+
+      total_units += p.units;
+      out.push_back(p);
+    }
+
+    if (out.empty()) {
+      err = "empty -mig tuple";
+      return false;
+    }
+
+    if (total_units != 4) {
+      err = "invalid A30 MIG tuple: the profile units must sum to 4";
+      out.clear();
+      return false;
+    }
+
+    return true;
+  }
+  static void append_line_to_file(const std::string &path,
+                                  const std::string &line) {
+    std::ofstream ofs(path, std::ios::app);
+    if (!ofs) return;
+    ofs << line;
+    if (line.empty() || line.back() != '\n') ofs << '\n';
+  }
 // helper temporarily redirect stdout to a file.
 struct ScopedStdoutRedirect {
   int old_fd = -1;
@@ -24,7 +103,6 @@ struct ScopedStdoutRedirect {
       old_fd = -1;
       return;
     }
-
     if (::dup2(new_fd, STDOUT_FILENO) < 0) {
       ::close(new_fd);
       ::close(old_fd);
@@ -49,7 +127,9 @@ struct ScopedStdoutRedirect {
   }
 };
 
-}  // namespace
+}  
+
+
 
 // ---------------------------------------------------------------------------
 // Existing constructors 
@@ -358,38 +438,134 @@ void accel_sim_framework::build_gpu_once(int argc, const char **argv) {
 
   std::string cfg_path, cfg_dir;
   bool has_trace_opt = false;
-  for (int i = 1; i < argc; ++i) {
-    if (std::string(argv[i]) == "-config" && i + 1 < argc) {
+  std::string mig_spec;
+
+  // Build a filtered argv for GPGPU-Sim itself:
+  // strip our daemon-only "-mig <tuple>" option before option_parser_cmdline().
+  std::vector<const char *> av;
+  av.reserve(static_cast<size_t>(argc) + 4);
+
+  for (int i = 0; i < argc; ++i) {
+    const std::string arg = argv[i];
+
+    if (arg == "-mig") {
+      if (i + 1 >= argc) {
+        std::cerr << "[MIG] error: -mig requires a tuple, e.g. -mig 1g.6gb,1g.6gb,2g.12gb\n";
+        std::exit(1);
+      }
+      mig_spec = argv[i + 1];
+      ++i;  // skip tuple argument too
+      continue;
+    }
+
+    av.push_back(argv[i]);
+
+    if (arg == "-config" && i + 1 < argc) {
       cfg_path = argv[i + 1];
     }
-    if (std::string(argv[i]) == "-trace" ||
-        std::string(argv[i]) == "-trace_config") {
+    if (arg == "-trace" || arg == "-trace_config") {
       has_trace_opt = true;
     }
   }
+
   if (!cfg_path.empty()) {
     auto pos = cfg_path.find_last_of("/\\");
     cfg_dir = (pos == std::string::npos) ? "." : cfg_path.substr(0, pos);
   }
 
-  std::vector<const char *> av;
-  av.reserve(static_cast<size_t>(argc) + 4);
-  for (int i = 0; i < argc; ++i) av.push_back(argv[i]);
-
   std::string trace_cfg_full;
-  // If you ever want to auto-add a trace.config near the .config file,
-  // uncomment this and make sure it matches your layout.
-  // if (!has_trace_opt && !cfg_dir.empty()) {
-  //   trace_cfg_full = cfg_dir + "/trace.config";
-  //   av.push_back("-trace_config");
-  //   av.push_back(trace_cfg_full.c_str());
-  // }
-
   int argc_local = static_cast<int>(av.size());
 
   m_gpgpu_sim = gpgpu_trace_sim_init_perf_model(argc_local, av.data(),
                                                 m_gpgpu_context, &tconfig);
   m_gpgpu_sim->init();
+
+  // ---------------- MIG startup creation ----------------
+  mig_enabled_ = false;
+  mig_slice_sms_.clear();
+  mig_slice_profiles_.clear();
+
+  if (!mig_spec.empty()) {
+    std::vector<ParsedMigProfile> parsed;
+    std::string err;
+    if (!parse_a30_mig_tuple(mig_spec, parsed, err)) {
+      std::cerr << "[MIG] error: " << err << "\n";
+      std::exit(1);
+    }
+
+    const unsigned total_sms = m_gpgpu_sim->get_config().num_shader();
+    const memory_config *mc = m_gpgpu_sim->getMemoryConfig();
+    const unsigned total_mem = mc->m_n_mem;
+    const unsigned sub_per_chan = mc->m_n_sub_partition_per_memory_channel;
+    const unsigned total_sub = mc->m_n_mem_sub_partition;
+
+    if ((total_sms % 4) != 0 || (total_mem % 4) != 0 || (total_sub % 4) != 0) {
+      std::cerr << "[MIG] error: current GPU config is not divisible into 4 A30 MIG units"
+                << " (sms=" << total_sms
+                << ", mem=" << total_mem
+                << ", sub=" << total_sub << ")\n";
+      std::exit(1);
+    }
+
+    const unsigned sms_per_unit = total_sms / 4;
+    const unsigned mem_per_unit = total_mem / 4;
+
+    unsigned next_sms = 0;
+    unsigned next_mem = 0;
+
+    for (size_t i = 0; i < parsed.size(); ++i) {
+      const ParsedMigProfile &p = parsed[i];
+
+      gpgpu_sim::mig_slice_desc_t s;
+      s.id = static_cast<unsigned>(i);
+      s.name = p.name;
+
+      const unsigned sms_count = p.units * sms_per_unit;
+      const unsigned mem_count = p.units * mem_per_unit;
+
+      for (unsigned sid = next_sms; sid < next_sms + sms_count; ++sid) {
+        s.sms.push_back(sid);
+      }
+
+      for (unsigned mp = next_mem; mp < next_mem + mem_count; ++mp) {
+        s.mem_partitions.push_back(mp);
+        for (unsigned sp = 0; sp < sub_per_chan; ++sp) {
+          s.sub_partitions.push_back(mp * sub_per_chan + sp);
+        }
+      }
+
+      m_gpgpu_sim->register_mig_slice(s);
+
+      mig_slice_sms_.push_back(s.sms);
+      mig_slice_profiles_.push_back(s.name);
+
+      std::cout << "[MIG] slice_id=" << s.id
+                << " profile=" << s.name
+                << " sms={";
+      for (size_t j = 0; j < s.sms.size(); ++j) {
+        if (j) std::cout << ",";
+        std::cout << s.sms[j];
+      }
+      std::cout << "} mem_partitions={";
+      for (size_t j = 0; j < s.mem_partitions.size(); ++j) {
+        if (j) std::cout << ",";
+        std::cout << s.mem_partitions[j];
+      }
+      std::cout << "} sub_partitions={";
+      for (size_t j = 0; j < s.sub_partitions.size(); ++j) {
+        if (j) std::cout << ",";
+        std::cout << s.sub_partitions[j];
+      }
+      std::cout << "}\n";
+
+      next_sms += sms_count;
+      next_mem += mem_count;
+    }
+
+    mig_enabled_ = true;
+    std::cout << "[MIG] enabled with " << mig_slice_sms_.size()
+              << " slices from tuple: " << mig_spec << "\n";
+  }
 }
 
 void accel_sim_framework::load_trace(const std::string &trace_path) {
@@ -458,6 +634,7 @@ void accel_sim_framework::start_job(const std::string &trace_dir,
                                     const std::string &out_dir,
                                     bool use_all_sms,
                                     const std::vector<unsigned> &sm_ids,
+                                    int slice_id,
                                     const std::string &job_id) {
   assert(m_gpgpu_sim && "build_gpu_once must be called before start_job");
 
@@ -473,6 +650,9 @@ void accel_sim_framework::start_job(const std::string &trace_dir,
   job.out_dir     = out_dir;
   job.use_all_sms = use_all_sms;
   job.sm_ids      = sm_ids;
+  job.slice_id    = slice_id;
+  job.global_mem_offset = next_job_global_offset_;
+  next_job_global_offset_ += kJobAddrStride;
   job.done        = false;
 
   std::string kernelslist_path = trace_dir;
@@ -484,6 +664,8 @@ void accel_sim_framework::start_job(const std::string &trace_dir,
             << " trace_dir=" << job.trace_dir
             << " kernelslist=" << kernelslist_path
             << " use_all_sms=" << (job.use_all_sms ? 1 : 0)
+            << " slice_id=" << job.slice_id
+            << " global_mem_offset=0x" << std::hex << job.global_mem_offset << std::dec
             << " sm_ids={";
   for (size_t i = 0; i < job.sm_ids.size(); ++i) {
     if (i) std::cout << ",";
@@ -555,24 +737,56 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
       size_t addre = 0, Bcount = 0;
       parser.parse_memcpy_info(cmd.command_string, addre, Bcount);
       std::cout << "[fw] job " << job.job_id
-                << " launching memcpy: " << cmd.command_string << std::endl;
-      m_gpgpu_sim->perf_memcpy_to_gpu(addre, Bcount);
+                << " launching memcpy: " << cmd.command_string
+                << " offset=0x" << std::hex << job.global_mem_offset << std::dec
+                << std::endl;
+      m_gpgpu_sim->perf_memcpy_to_gpu(addre, Bcount,
+                                      job.global_mem_offset,
+                                      job.slice_id);
       job.commandlist_index++;
     } else if (cmd.m_type == command_type::kernel_launch) {
       kernel_trace_t *kernel_trace_info =
           parser.parse_kernel_info(cmd.command_string);
 
       kernel_info = create_kernel_info(kernel_trace_info, m_gpgpu_context,
-                                       &tconfig, &parser);
-      //kernel_info->set_job_uid(job.job_uid);
-      // Apply per-job SM mask (daemon path)
-      if (!job.use_all_sms && !job.sm_ids.empty()) {
+                                      &tconfig, &parser);
+
+      // If this job is bound to a MIG slice, register slice ownership first
+      // and let the slice define the SM mask.
+      // Otherwise keep the old explicit-SM behavior.
+      if (job.slice_id >= 0) {
+        m_gpgpu_sim->register_kernel_slice(kernel_info->get_uid(),
+                                          (unsigned)job.slice_id);
+
+        unsigned num_sms = get_num_sms();
+        kernel_info->set_allowed_sms(job.sm_ids, num_sms);
+      } else if (!job.use_all_sms && !job.sm_ids.empty()) {
         unsigned num_sms = get_num_sms();
         kernel_info->set_allowed_sms(job.sm_ids, num_sms);
       }
+      m_gpgpu_sim->register_kernel_global_offset(kernel_info->get_uid(),
+                                                 job.global_mem_offset);
 
       job.kernels_info.push_back(kernel_info);
+      const unsigned kid = kernel_info->get_uid();
+      const std::string out_path =
+          job.out_dir + "/kernel_" + std::to_string(kid) + ".out";
 
+      // Register path immediately so later low-level code can append to it.
+      m_gpgpu_sim->register_kernel_log_file(kid, out_path);
+
+      // Start clean for this kernel file.
+      {
+        std::ofstream trunc(out_path, std::ios::trunc);
+      }
+
+      {
+        std::ostringstream oss;
+        oss << "[fw] job " << job.job_id
+            << " header loaded for kernel: " << cmd.command_string
+            << " (uid=" << kid << ")";
+        append_line_to_file(out_path, oss.str());
+      }
       std::cout << "[fw] job " << job.job_id
                 << " header loaded for kernel: " << cmd.command_string
                 << " (uid=" << kernel_info->get_uid() << ")" << std::endl;
@@ -614,11 +828,18 @@ void accel_sim_framework::parse_and_launch_for_job(size_t job_index) {
 
     // Actually remap the stream id in  kernel trace
     k->set_cuda_stream_id(global_sid);
+    {
+      const unsigned kid = k->get_uid();
+      const std::string out_path =
+          job.out_dir + "/kernel_" + std::to_string(kid) + ".out";
 
-    std::cout << "[fw] launching kernel (job " << job.job_id << ") name: "
-              << k->get_name() << " uid: " << k->get_uid()
-              << " local_stream_id: " << local_sid
-              << " global_stream_id: " << global_sid << std::endl;
+      std::ostringstream oss;
+      oss << "[fw] launching kernel (job " << job.job_id << ") name: "
+          << k->get_name() << " uid: " << k->get_uid()
+          << " local_stream_id: " << local_sid
+          << " global_stream_id: " << global_sid;
+      append_line_to_file(out_path, oss.str());
+    }
     m_gpgpu_sim->note_kernel_launch(k);   // NEW (needs the *global* stream id)
     m_gpgpu_sim->launch(k);
     k->set_launched();
@@ -700,7 +921,7 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
                            std::to_string(finished_kernel_uid) + ".out";
 
     // Redirect stdout so gpu_print_stat prints into job-specific file
-    ScopedStdoutRedirect redirect(out_path, /*append=*/false);
+    ScopedStdoutRedirect redirect(out_path, /*append=*/true);
 
     kernel_stats_view_t view =
         m_gpgpu_sim->make_kernel_stats_view(finished_kernel_uid);
@@ -711,8 +932,15 @@ void accel_sim_framework::cleanup_finished_kernel(unsigned finished_kernel_uid) 
         finished_kernel_name.c_str(),
         finished_kernel_uid_int);
 
-    m_gpgpu_sim->clear_kernel_stats(finished_kernel_uid);
+    // Duplicate the global simulation footer into this kernel file too.
+    // These are still global snapshots, not kernel-private values.
+    m_gpgpu_context->print_simulation_time();
+    printf("GPGPU-Sim: *** simulation thread exiting ***\n");
+    printf("GPGPU-Sim: *** exit detected ***\n");
 
+    m_gpgpu_sim->clear_kernel_stats(finished_kernel_uid);
+    m_gpgpu_sim->unregister_kernel_log_file(finished_kernel_uid);
+    m_gpgpu_sim->unregister_kernel_global_offset(finished_kernel_uid);
   }
 
   // Mark job as done when everything for this job has drained

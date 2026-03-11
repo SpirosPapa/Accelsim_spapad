@@ -43,6 +43,9 @@
 #include "mem_fetch.h"
 #include "shader.h"
 #include "shader_trace.h"
+#include <cstdarg>
+#include <cstdio>
+#include <fstream>
 
 #include <time.h>
 #include "addrdec.h"
@@ -1218,6 +1221,7 @@ void gpgpu_sim::clear_kernel_stats(unsigned kernel_uid) {
   //
   m_sched_issue_rec_.erase(kernel_uid);
   m_icnt_rec.erase(kernel_uid);
+  m_kernel_to_slice_id.erase(kernel_uid);
 }
 
 
@@ -3075,25 +3079,55 @@ void shader_core_ctx::dump_warp_state(FILE *fout) const {
     m_warp[w]->print(fout);
 }
 
-void gpgpu_sim::perf_memcpy_to_gpu(size_t dst_start_addr, size_t count) {
-  if (m_memory_config->m_perf_sim_memcpy) {
-    // if(!m_config.trace_driven_mode)    //in trace-driven mode, CUDA runtime
-    // can start nre data structure at any position 	assert (dst_start_addr %
-    // 32
-    //== 0);
+void gpgpu_sim::perf_memcpy_to_gpu(size_t dst_start_addr, size_t count,
+                                   new_addr_type job_offset,
+                                   int slice_id) {
+  if (!m_memory_config->m_perf_sim_memcpy) return;
 
-    for (unsigned counter = 0; counter < count; counter += 32) {
-      const unsigned wr_addr = dst_start_addr + counter;
-      addrdec_t raw_addr;
-      mem_access_sector_mask_t mask;
-      mask.set(wr_addr % 128 / 32);
-      m_memory_config->m_address_mapping.addrdec_tlx(wr_addr, &raw_addr);
-      const unsigned partition_id =
-          raw_addr.sub_partition /
+  for (unsigned counter = 0; counter < count; counter += 32) {
+    const new_addr_type wr_addr =
+        static_cast<new_addr_type>(dst_start_addr) +
+        static_cast<new_addr_type>(counter) +
+        job_offset;
+
+    mem_access_sector_mask_t mask;
+    mask.set((wr_addr % 128) / 32);
+
+    unsigned partition_id = 0;
+    unsigned global_spid = 0;
+
+    if (slice_id >= 0) {
+      const mig_slice_desc_t *sl = get_slice((unsigned)slice_id);
+      assert(sl && "Invalid slice_id in perf_memcpy_to_gpu");
+      assert(!sl->mem_partitions.empty() && "Slice has no memory partitions");
+
+      addrdec_t local_tlx = {};
+      sl->local_address_mapping.addrdec_tlx(wr_addr, &local_tlx);
+
+      const unsigned local_chip = local_tlx.chip;
+      assert(local_chip < sl->mem_partitions.size());
+
+      const unsigned sub_per_chan =
           m_memory_config->m_n_sub_partition_per_memory_channel;
-      m_memory_partition_unit[partition_id]->handle_memcpy_to_gpu(
-          wr_addr, raw_addr.sub_partition, mask);
+      const unsigned local_sub_in_channel =
+          local_tlx.sub_partition % sub_per_chan;
+
+      const unsigned global_chip = sl->mem_partitions[local_chip];
+      global_spid = global_chip * sub_per_chan + local_sub_in_channel;
+      partition_id = global_chip;
+
+      assert(partition_id < m_memory_config->m_n_mem);
+      assert(global_spid < m_memory_config->m_n_mem_sub_partition);
+    } else {
+      addrdec_t raw_addr = {};
+      m_memory_config->m_address_mapping.addrdec_tlx(wr_addr, &raw_addr);
+      global_spid = raw_addr.sub_partition;
+      partition_id =
+          global_spid / m_memory_config->m_n_sub_partition_per_memory_channel;
     }
+
+    m_memory_partition_unit[partition_id]->handle_memcpy_to_gpu(
+        wr_addr, global_spid, mask);
   }
 }
 
@@ -3646,7 +3680,196 @@ void gpgpu_sim::unbind_kernel_from_sms(unsigned kid) {
     if (x == kid) x = 0;
 }
 
+  // ---------------- MIG slicing ----------------
+bool gpgpu_sim::mig_enabled() const {
+  return !m_mig_slices.empty();
+}
 
+const gpgpu_sim::mig_slice_desc_t *
+gpgpu_sim::get_slice(unsigned slice_id) const {
+  if (slice_id >= m_mig_slices.size()) return nullptr;
+  return &m_mig_slices[slice_id];
+}
+
+void gpgpu_sim::register_mig_slice(const mig_slice_desc_t &in) {
+  mig_slice_desc_t s = in;
+
+  const unsigned n_sms = m_shader_config->num_shader();
+  const unsigned n_mem = m_memory_config->m_n_mem;
+  const unsigned sub_per_chan =
+      m_memory_config->m_n_sub_partition_per_memory_channel;
+  const unsigned n_sub = m_memory_config->m_n_mem_sub_partition;
+
+  s.sm_mask.assign(n_sms, false);
+  s.mem_mask.assign(n_mem, false);
+  s.sub_mask.assign(n_sub, false);
+
+  for (unsigned x : s.sms) {
+    if (x < n_sms) s.sm_mask[x] = true;
+  }
+
+  for (unsigned x : s.mem_partitions) {
+    if (x < n_mem) s.mem_mask[x] = true;
+  }
+
+  // Derive sub_partitions from owned memory partitions if caller did not
+  // explicitly provide them.
+  if (s.sub_partitions.empty()) {
+    for (unsigned mp : s.mem_partitions) {
+      if (mp >= n_mem) continue;
+      for (unsigned p = 0; p < sub_per_chan; ++p) {
+        s.sub_partitions.push_back(mp * sub_per_chan + p);
+      }
+    }
+  }
+
+  for (unsigned x : s.sub_partitions) {
+    if (x < n_sub) s.sub_mask[x] = true;
+  }
+
+  // Build a slice-local address mapping using the *same* mapping logic
+  // as the full GPU, but over only this slice's visible memory channels.
+  s.local_n_mem = s.mem_partitions.size();
+  s.local_n_sub_partition_per_channel = sub_per_chan;
+
+  if (s.local_n_mem > 0) {
+    // Copy the fully configured global mapper first so we inherit
+    // gpgpu_mem_address_mask / partition indexing / addrdec options.
+    s.local_address_mapping = m_memory_config->m_address_mapping;
+    s.local_address_mapping.init(s.local_n_mem, sub_per_chan);
+  }
+
+  if (s.id >= m_mig_slices.size()) {
+    m_mig_slices.resize(s.id + 1);
+  }
+  m_mig_slices[s.id] = std::move(s);
+}
+
+void gpgpu_sim::register_kernel_slice(unsigned kid, unsigned slice_id) {
+  if (!kid) return;
+  m_kernel_to_slice_id[kid] = slice_id;
+}
+
+unsigned gpgpu_sim::kernel_slice_id(unsigned kid) const {
+  auto it = m_kernel_to_slice_id.find(kid);
+  if (it == m_kernel_to_slice_id.end()) return (unsigned)-1;
+  return it->second;
+}
+
+void gpgpu_sim::register_kernel_global_offset(unsigned kid, new_addr_type off) {
+  if (!kid) return;
+  m_kernel_global_offset[kid] = off;
+}
+
+void gpgpu_sim::unregister_kernel_global_offset(unsigned kid) {
+  if (!kid) return;
+  m_kernel_global_offset.erase(kid);
+}
+
+new_addr_type gpgpu_sim::kernel_global_offset(unsigned kid) const {
+  auto it = m_kernel_global_offset.find(kid);
+  if (it == m_kernel_global_offset.end()) return 0;
+  return it->second;
+}
+
+new_addr_type gpgpu_sim::apply_kernel_global_offset(unsigned kid,
+                                                    new_addr_type addr) const {
+  auto it = m_kernel_global_offset.find(kid);
+  if (it == m_kernel_global_offset.end()) return addr;
+  return addr + it->second;
+}
+
+
+void gpgpu_sim::apply_slice_sm_mask_to_kernel(kernel_info_t *k,
+                                              unsigned slice_id) {
+  if (!k) return;
+  const mig_slice_desc_t *sl = get_slice(slice_id);
+  if (!sl) return;
+
+  std::vector<bool> allowed(m_shader_config->num_shader(), false);
+  for (unsigned sid : sl->sms) {
+    if (sid < allowed.size()) allowed[sid] = true;
+  }
+  k->set_allowed_sms(allowed);
+}
+
+bool gpgpu_sim::kernel_can_access_sub_partition(unsigned kid,
+                                                unsigned global_spid) const {
+  auto it = m_kernel_to_slice_id.find(kid);
+  if (it == m_kernel_to_slice_id.end()) return true;  // not sliced
+
+  const mig_slice_desc_t *sl = get_slice(it->second);
+  if (!sl) return true;
+  if (global_spid >= sl->sub_mask.size()) return false;
+  return sl->sub_mask[global_spid];
+}
+
+bool gpgpu_sim::kernel_can_access_mem_partition(unsigned kid,
+                                                unsigned mem_pid) const {
+  auto it = m_kernel_to_slice_id.find(kid);
+  if (it == m_kernel_to_slice_id.end()) return true;  // not sliced
+
+  const mig_slice_desc_t *sl = get_slice(it->second);
+  if (!sl) return true;
+  if (mem_pid >= sl->mem_mask.size()) return false;
+  return sl->mem_mask[mem_pid];
+}
+
+bool gpgpu_sim::slice_decode_for_kernel(unsigned kid, new_addr_type addr,
+                                        unsigned *global_chip,
+                                        unsigned *global_spid) const {
+  if (!global_chip || !global_spid) return false;
+
+  auto it = m_kernel_to_slice_id.find(kid);
+  if (it == m_kernel_to_slice_id.end()) return false;
+
+  const mig_slice_desc_t *sl = get_slice(it->second);
+  if (!sl) return false;
+  if (sl->mem_partitions.empty()) return false;
+
+  addrdec_t local_tlx = {};
+  sl->local_address_mapping.addrdec_tlx(addr, &local_tlx);
+
+  const unsigned local_chip = local_tlx.chip;
+  if (local_chip >= sl->mem_partitions.size()) return false;
+
+  const unsigned sub_per_chan =
+      m_memory_config->m_n_sub_partition_per_memory_channel;
+
+  // local_tlx.sub_partition is over the slice-local topology:
+  // local_chip * sub_per_chan + local_sub_in_channel
+  const unsigned local_sub_in_channel =
+      local_tlx.sub_partition % sub_per_chan;
+
+  const unsigned mapped_global_chip = sl->mem_partitions[local_chip];
+  const unsigned mapped_global_spid =
+      mapped_global_chip * sub_per_chan + local_sub_in_channel;
+
+  *global_chip = mapped_global_chip;
+  *global_spid = mapped_global_spid;
+  return true;
+}
+
+unsigned gpgpu_sim::remap_sub_partition_for_kernel(
+    unsigned kid, unsigned requested_global_spid) const {
+  auto it = m_kernel_to_slice_id.find(kid);
+  if (it == m_kernel_to_slice_id.end()) return requested_global_spid;
+
+  const mig_slice_desc_t *sl = get_slice(it->second);
+  if (!sl || sl->sub_partitions.empty()) return requested_global_spid;
+
+  // If already legal for this slice, keep it.
+  if (requested_global_spid < sl->sub_mask.size() &&
+      sl->sub_mask[requested_global_spid]) {
+    return requested_global_spid;
+  }
+
+  // Deterministic first-pass remap:
+  // fold the original global SPID into the slice-local SP list.
+  unsigned idx = requested_global_spid % sl->sub_partitions.size();
+  return sl->sub_partitions[idx];
+}
+  // ---------------- MIG slicing ----------------
 void gpgpu_sim::record_kernel_shmem_bkconflict(unsigned kid) {
   if (!kid) return;
   kernel_stats_mut_(kid).gpgpu_n_shmem_bkconflict++;
@@ -4444,4 +4667,48 @@ void gpgpu_sim::record_kernel_reply_net_out_buffer_util(unsigned kernel_uid,
                                                         unsigned long long n) {
   if (!kernel_uid) return;
   kernel_stats_mut_(kernel_uid).reply_net_out_buffer_util += n;
+}
+
+#include <cstdarg>
+#include <cstdio>
+#include <fstream>
+
+void gpgpu_sim::register_kernel_log_file(unsigned kernel_uid,
+                                         const std::string &path) {
+  if (!kernel_uid) return;
+  m_kernel_log_files[kernel_uid] = path;
+}
+
+void gpgpu_sim::unregister_kernel_log_file(unsigned kernel_uid) {
+  if (!kernel_uid) return;
+  m_kernel_log_files.erase(kernel_uid);
+}
+
+void gpgpu_sim::append_kernel_log_line(unsigned kernel_uid,
+                                       const std::string &line) {
+  if (!kernel_uid) return;
+  auto it = m_kernel_log_files.find(kernel_uid);
+  if (it == m_kernel_log_files.end()) return;
+
+  std::ofstream ofs(it->second, std::ios::app);
+  if (!ofs) return;
+  ofs << line;
+  if (line.empty() || line.back() != '\n') ofs << '\n';
+}
+
+void gpgpu_sim::append_kernel_logf(unsigned kernel_uid,
+                                   const char *fmt, ...) {
+  if (!kernel_uid || !fmt) return;
+  auto it = m_kernel_log_files.find(kernel_uid);
+  if (it == m_kernel_log_files.end()) return;
+
+  char buf[4096];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+
+  std::ofstream ofs(it->second, std::ios::app);
+  if (!ofs) return;
+  ofs << buf;
 }

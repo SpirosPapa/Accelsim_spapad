@@ -2102,13 +2102,7 @@ class shader_core_ctx : public core_t {
   void accept_ldst_unit_response(class mem_fetch *mf);
   void broadcast_barrier_reduction(unsigned cta_id, unsigned bar_id,
                                    warp_set_t warps);
-  void set_kernel(kernel_info_t *k) {
-    assert(k);
-    m_kernel = k;
-    //        k->inc_running();
-    printf("GPGPU-Sim uArch: Shader %d bind to kernel %u \'%s\'\n", m_sid,
-           m_kernel->get_uid(), m_kernel->name().c_str());
-  }
+  void set_kernel(kernel_info_t *k);
   PowerscalingCoefficients *scaling_coeffs;
   // accessors
   bool fetch_unit_response_buffer_full() const;

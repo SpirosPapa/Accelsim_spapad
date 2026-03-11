@@ -861,6 +861,12 @@ memory_sub_partition::breakdown_request_to_sector_requests(mem_fetch *mf) {
 
 void memory_sub_partition::push(mem_fetch *m_req, unsigned long long cycle) {
   if (m_req) {
+    if (m_req->has_kernel_uid()) {
+      const unsigned kid = m_req->get_kernel_uid();
+      assert(m_gpu->kernel_can_access_sub_partition(kid, m_id) &&
+             "MIG violation: request arrived at forbidden L2 subpartition");
+    }
+
     m_stats->memlatstat_icnt2mem_pop(m_req);
     std::vector<mem_fetch *> reqs;
     if (m_config->m_L2_config.m_cache_type == SECTOR)
@@ -870,6 +876,14 @@ void memory_sub_partition::push(mem_fetch *m_req, unsigned long long cycle) {
 
     for (unsigned i = 0; i < reqs.size(); ++i) {
       mem_fetch *req = reqs[i];
+
+      if (req && req->has_kernel_uid()) {
+        const unsigned kid = req->get_kernel_uid();
+        assert(m_gpu->kernel_can_access_sub_partition(
+                   kid, req->get_sub_partition_id()) &&
+               "MIG violation: sectorized request mapped to forbidden L2 subpartition");
+      }
+
       m_request_tracker.insert(req);
       if (req->istexture()) {
         m_icnt_L2_queue->push(req);

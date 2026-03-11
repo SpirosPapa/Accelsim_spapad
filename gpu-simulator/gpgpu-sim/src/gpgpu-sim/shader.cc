@@ -58,7 +58,8 @@
 mem_fetch *shader_core_mem_fetch_allocator::alloc(
     new_addr_type addr, mem_access_type type, unsigned size, bool wr,
     unsigned long long cycle, unsigned long long streamID) const {
-  mem_access_t access(type, addr, size, wr, m_memory_config->gpgpu_ctx);
+  new_addr_type final_addr = addr;
+  mem_access_t access(type, final_addr, size, wr, m_memory_config->gpgpu_ctx);
   mem_fetch *mf = new mem_fetch(
       access, NULL, streamID, wr ? WRITE_PACKET_SIZE : READ_PACKET_SIZE, -1,
       m_core_id, m_cluster_id, m_memory_config, cycle);
@@ -71,11 +72,37 @@ mem_fetch *shader_core_mem_fetch_allocator::alloc(
     const mem_access_sector_mask_t &sector_mask, unsigned size, bool wr,
     unsigned long long cycle, unsigned wid, unsigned sid, unsigned tpc,
     mem_fetch *original_mf, unsigned long long streamID) const {
-  mem_access_t access(type, addr, size, wr, active_mask, byte_mask, sector_mask,
+  new_addr_type final_addr = addr;
+
+  // Apply per-job offset only to runtime GLOBAL-space traffic.
+  // Leave shared/local/const/texture paths unchanged.
+  if (type == GLOBAL_ACC_R || type == GLOBAL_ACC_W ||
+      type == L1_WRBK_ACC || type == L2_WRBK_ACC ||
+      type == L1_WR_ALLOC_R || type == L2_WR_ALLOC_R) {
+    unsigned kid = 0;
+    if (original_mf && original_mf->has_kernel_uid()) {
+      kid = original_mf->get_kernel_uid();
+    }
+    if (kid) {
+      const gpgpu_sim *gpu =
+          m_memory_config->gpgpu_ctx->the_gpgpusim->g_the_gpu;
+      assert(gpu);
+      final_addr = gpu->apply_kernel_global_offset(kid, addr);
+    }
+  }
+
+  mem_access_t access(type, final_addr, size, wr,
+                      active_mask, byte_mask, sector_mask,
                       m_memory_config->gpgpu_ctx);
+
   mem_fetch *mf = new mem_fetch(
       access, NULL, streamID, wr ? WRITE_PACKET_SIZE : READ_PACKET_SIZE, wid,
       m_core_id, m_cluster_id, m_memory_config, cycle, original_mf);
+
+  if (original_mf && original_mf->has_kernel_uid()) {
+    mf->set_kernel_uid(original_mf->get_kernel_uid());
+  }
+
   return mf;
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -5078,6 +5105,41 @@ bool sst_simt_core_cluster::SST_injection_buffer_full(unsigned size, bool write,
   }
 }
 
+// void simt_core_cluster::icnt_inject_request_packet(class mem_fetch *mf) {
+//   if (mf && !mf->has_kernel_uid()) {
+//     unsigned long long sid = mf->get_streamID();
+//     auto it = m_gpu->stream_to_kernel_map.find(sid);
+//     if (it != m_gpu->stream_to_kernel_map.end()) {
+//       mf->set_kernel_uid(it->second);
+//     }
+//   }
+//   // Update stats based on mf type
+//   update_icnt_stats(mf);
+
+//   // The packet size varies depending on the type of request:
+//   // - For write request and atomic request, the packet contains the data
+//   // - For read request (i.e. not write nor atomic), the packet only has control
+//   // metadata
+//   unsigned int packet_size = mf->size();
+//   if (!mf->get_is_write() && !mf->isatomic()) {
+//     packet_size = mf->get_ctrl_size();
+//   }
+//   m_stats->m_outgoing_traffic_stats->record_traffic(mf, packet_size);
+//   if (mf && mf->has_kernel_uid()) {
+//     m_gpu->record_kernel_outgoing_traffic(mf->get_kernel_uid(), mf, packet_size);
+//   }
+
+//   unsigned destination = mf->get_sub_partition_id();
+//   mf->set_status(IN_ICNT_TO_MEM,
+//                  m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
+//   if (!mf->get_is_write() && !mf->isatomic())
+//     ::icnt_push(m_cluster_id, m_config->mem2device(destination), (void *)mf,
+//                 mf->get_ctrl_size());
+//   else
+//     ::icnt_push(m_cluster_id, m_config->mem2device(destination), (void *)mf,
+//                 mf->size());
+// }
+
 void simt_core_cluster::icnt_inject_request_packet(class mem_fetch *mf) {
   if (mf && !mf->has_kernel_uid()) {
     unsigned long long sid = mf->get_streamID();
@@ -5086,17 +5148,37 @@ void simt_core_cluster::icnt_inject_request_packet(class mem_fetch *mf) {
       mf->set_kernel_uid(it->second);
     }
   }
+
+  // ---------------- MIG: slice-local decode using existing address mapping ----------------
+  if (mf && mf->has_kernel_uid()) {
+    const unsigned kid = mf->get_kernel_uid();
+
+    unsigned global_chip = 0;
+    unsigned global_spid = 0;
+
+    if (m_gpu->slice_decode_for_kernel(kid, mf->get_addr(),
+                                       &global_chip, &global_spid)) {
+      mf->set_chip(global_chip);
+      mf->set_partition(global_spid);
+    }
+
+    assert(m_gpu->kernel_can_access_sub_partition(
+               kid, mf->get_sub_partition_id()) &&
+           "MIG violation: request mapped to forbidden L2 subpartition");
+
+    assert(m_gpu->kernel_can_access_mem_partition(
+               kid, mf->get_tlx_addr().chip) &&
+           "MIG violation: request mapped to forbidden DRAM partition");
+  }
+
   // Update stats based on mf type
   update_icnt_stats(mf);
 
-  // The packet size varies depending on the type of request:
-  // - For write request and atomic request, the packet contains the data
-  // - For read request (i.e. not write nor atomic), the packet only has control
-  // metadata
   unsigned int packet_size = mf->size();
   if (!mf->get_is_write() && !mf->isatomic()) {
     packet_size = mf->get_ctrl_size();
   }
+
   m_stats->m_outgoing_traffic_stats->record_traffic(mf, packet_size);
   if (mf && mf->has_kernel_uid()) {
     m_gpu->record_kernel_outgoing_traffic(mf->get_kernel_uid(), mf, packet_size);
@@ -5105,6 +5187,7 @@ void simt_core_cluster::icnt_inject_request_packet(class mem_fetch *mf) {
   unsigned destination = mf->get_sub_partition_id();
   mf->set_status(IN_ICNT_TO_MEM,
                  m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
+
   if (!mf->get_is_write() && !mf->isatomic())
     ::icnt_push(m_cluster_id, m_config->mem2device(destination), (void *)mf,
                 mf->get_ctrl_size());
@@ -5426,3 +5509,15 @@ inline void ldst_unit::tag_mf_kernel(mem_fetch *mf, unsigned warp_id) {
   }
 }
 
+void shader_core_ctx::set_kernel(kernel_info_t *k) {
+  assert(k);
+  m_kernel = k;
+
+  // Only log a bind for cores that can actually issue a CTA for this kernel.
+  if (m_gpu && m_kernel && can_issue_1block(*m_kernel)) {
+    m_gpu->append_kernel_logf(
+        m_kernel->get_uid(),
+        "GPGPU-Sim uArch: Shader %d bind to kernel %u '%s'\n",
+        m_sid, m_kernel->get_uid(), m_kernel->name().c_str());
+  }
+}

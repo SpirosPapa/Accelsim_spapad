@@ -247,8 +247,14 @@ dram_req_t::dram_req_t(class mem_fetch *mf, unsigned banks,
 }
 
 void dram_t::push(class mem_fetch *data) {
-  assert(id == data->get_tlx_addr()
-                   .chip);  // Ensure request is in correct memory partition
+  assert(id == data->get_tlx_addr().chip);
+
+  if (data && data->has_kernel_uid()) {
+    const unsigned kid = data->get_kernel_uid();
+    assert(m_memory_partition_unit->get_mgpu()->kernel_can_access_mem_partition(
+               kid, id) &&
+           "MIG violation: request pushed into forbidden DRAM partition");
+  }
 
   dram_req_t *mrq =
       new dram_req_t(data, m_config->nbk, m_config->dram_bnk_indexing_policy,
@@ -257,7 +263,7 @@ void dram_t::push(class mem_fetch *data) {
   data->set_status(IN_PARTITION_MC_INTERFACE_QUEUE,
                    m_gpu->gpu_sim_cycle + m_gpu->gpu_tot_sim_cycle);
   mrqq->push(mrq);
-  //MY ADDITION
+    //MY ADDITION
   if (data && data->has_kernel_uid()) {
     unsigned kid = data->get_kernel_uid();
     if (kid) m_outstanding_reqs_by_kid[kid] += 1ULL;

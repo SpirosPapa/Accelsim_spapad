@@ -23,6 +23,7 @@ struct Job {
   std::string out_dir;
   bool use_all_sms = true;            // true => job can use all SMs
   std::vector<unsigned> sm_ids;       // empty + use_all_sms=true => all SMs
+  int slice_id = -1;                  // -1 means "no MIG slice"
 };
 
 enum class JobState { Pending, Running, Finished };
@@ -36,6 +37,10 @@ struct DaemonState {
   std::mutex mx;
   std::vector<JobRecord> jobs;        // all jobs, in arrival order
   std::atomic<bool> shutdown_requested{false};
+
+  bool mig_enabled = false;
+  std::vector<std::vector<unsigned>> mig_slice_sms;
+  std::vector<std::string> mig_slice_profiles;
 };
 
 // ------------------- helpers ------------------------------------------------
@@ -144,20 +149,23 @@ static std::string handle_line(DaemonState &st,
 
     Job job;
     job.trace_dir = toks[0];
-
-    // incoming job_id based on time
     job.id = std::to_string(
         std::hash<std::string>{}(job.trace_dir + std::to_string(std::time(nullptr))));
 
     job.out_dir.clear();
     job.sm_ids.clear();
     job.use_all_sms = true;
+    job.slice_id = -1;
+
+    bool saw_sms = false;
+    bool saw_slice = false;
 
     for (size_t i = 1; i < toks.size(); ++i) {
       const auto &t = toks[i];
       if (t.rfind("out=", 0) == 0) {
         job.out_dir = t.substr(4);
       } else if (t.rfind("sms=", 0) == 0) {
+        saw_sms = true;
         std::string spec = t.substr(4);
         std::string err_json;
         std::vector<unsigned> sm_ids;
@@ -171,6 +179,37 @@ static std::string handle_line(DaemonState &st,
           job.use_all_sms = true;
           job.sm_ids.clear();
         }
+      } else if (t.rfind("slice=", 0) == 0) {
+        saw_slice = true;
+        try {
+          size_t pos = 0;
+          int v = std::stoi(t.substr(6), &pos);
+          if (pos != t.substr(6).size()) throw std::invalid_argument("junk");
+          if (v < 0) throw std::invalid_argument("negative");
+          job.slice_id = v;
+        } catch (...) {
+          return "{\"ok\":false,\"error\":\"invalid slice id\"}";
+        }
+      }
+    }
+
+    if (st.mig_enabled) {
+      if (!saw_slice) {
+        return "{\"ok\":false,\"error\":\"MIG is enabled; SUBMIT must include slice=<id>\"}";
+      }
+      if (saw_sms) {
+        return "{\"ok\":false,\"error\":\"when MIG is enabled, do not pass sms=; the slice defines the SM set\"}";
+      }
+      if (job.slice_id < 0 ||
+          static_cast<size_t>(job.slice_id) >= st.mig_slice_sms.size()) {
+        return "{\"ok\":false,\"error\":\"slice id out of range\"}";
+      }
+
+      job.use_all_sms = false;
+      job.sm_ids = st.mig_slice_sms[job.slice_id];
+    } else {
+      if (saw_slice) {
+        return "{\"ok\":false,\"error\":\"slice= requires startup with -mig\"}";
       }
     }
 
@@ -218,7 +257,6 @@ static std::string handle_line(DaemonState &st,
     return os.str();
   }
 
-  // list pending jobs
   if (cmd == "QUEUE") {
     std::vector<JobRecord> snapshot;
     {
@@ -307,6 +345,11 @@ int main(int argc, const char **argv) {
   const unsigned total_sms = fw.get_num_sms();
 
   DaemonState state;
+  state.mig_enabled = fw.mig_enabled();
+  for (size_t i = 0; i < fw.mig_num_slices(); ++i) {
+    state.mig_slice_sms.push_back(fw.mig_slice_sms(i));
+    state.mig_slice_profiles.push_back(fw.mig_slice_profile(i));
+  }
 
   IpcServer srv("/tmp/accelsim.sock");
   if (!srv.start([&](const std::string &s) {
@@ -346,6 +389,7 @@ int main(int argc, const char **argv) {
                      jr.job.out_dir,
                      jr.job.use_all_sms,
                      jr.job.sm_ids,
+                     jr.job.slice_id,
                      jr.job.id);
 
         jr.state = JobState::Running;

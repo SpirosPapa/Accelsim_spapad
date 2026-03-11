@@ -1,0 +1,2 @@
+[fw] job 6242189786156565383 header loaded for kernel: /spapad/accel-sim-clean/sim_run_11.1_new_idle_validation/backprop-rodinia-3.1/65536/A30_MIG_4g.24gb-Accelwattch_SASS_SIM/traces/kernel-2-ctx_0x56237acb3f90.traceg.xz (uid=4)
+[fw] launching kernel (job 6242189786156565383) name: _Z24bpnn_adjust_weights_cudaPfiS_iS_S_ uid: 4 local_stream_id: 0 global_stream_id: 2

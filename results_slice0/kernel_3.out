@@ -1,0 +1,16 @@
+[fw] job 14708374685734825723 header loaded for kernel: /spapad/accel-sim-clean/sim_run_11.1_new_idle_validation/backprop-rodinia-3.1/65536/A30_MIG_4g.24gb-Accelwattch_SASS_SIM/traces/kernel-2-ctx_0x56237acb3f90.traceg.xz (uid=3)
+[fw] launching kernel (job 14708374685734825723) name: _Z24bpnn_adjust_weights_cudaPfiS_iS_S_ uid: 3 local_stream_id: 0 global_stream_id: 1
+GPGPU-Sim uArch: Shader 0 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 1 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 2 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 3 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 4 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 5 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 6 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 7 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 8 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 9 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 10 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 11 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 12 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'
+GPGPU-Sim uArch: Shader 13 bind to kernel 3 '_Z24bpnn_adjust_weights_cudaPfiS_iS_S_'

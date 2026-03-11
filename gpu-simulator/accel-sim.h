@@ -24,7 +24,9 @@
 #include "trace_driven.h"
 
 class accel_sim_framework {
- uint32_t next_job_uid_ = 1;
+  uint32_t next_job_uid_ = 1;
+  new_addr_type next_job_global_offset_ = (1ULL << 40);   // start at 1 TiB
+  static constexpr new_addr_type kJobAddrStride = (1ULL << 40); // 1 TiB/job
  public:
   accel_sim_framework();
   accel_sim_framework(int argc, const char **argv);
@@ -76,13 +78,26 @@ class accel_sim_framework {
   unsigned get_num_sms() const;
   void configure_sm_mask_for_next_job(bool use_all_sms,
                                       const std::vector<unsigned> &sm_ids);
+  // MIG SLICE CREATION 
+  bool mig_enabled() const { return mig_enabled_; }
+  size_t mig_num_slices() const { return mig_slice_sms_.size(); }
 
+  const std::vector<unsigned> &mig_slice_sms(size_t slice_id) const {
+    assert(slice_id < mig_slice_sms_.size());
+    return mig_slice_sms_[slice_id];
+  }
+
+  const std::string &mig_slice_profile(size_t slice_id) const {
+    assert(slice_id < mig_slice_profiles_.size());
+    return mig_slice_profiles_[slice_id];
+  } 
   // ----- NEW multi-job daemon API -------------------------------------------
   void start_job(const std::string &trace_dir,
-                 const std::string &out_dir,
-                 bool use_all_sms,
-                 const std::vector<unsigned> &sm_ids,
-                 const std::string &job_id);
+                const std::string &out_dir,
+                bool use_all_sms,
+                const std::vector<unsigned> &sm_ids,
+                int slice_id,
+                const std::string &job_id);
 
   bool has_active_work() const;
 
@@ -104,6 +119,9 @@ class accel_sim_framework {
 
     bool use_all_sms = true;
     std::vector<unsigned> sm_ids;
+    
+    int slice_id = -1;   // NEW
+    new_addr_type global_mem_offset = 0;  // unique global address-space base for this job
 
     std::unique_ptr<trace_parser> parser;
     std::vector<trace_command> commandlist;
@@ -164,7 +182,10 @@ class accel_sim_framework {
   // Legacy per-job SM mask (applied in create_kernel_info on legacy path)
   bool job_use_all_sms_ = true;
   std::vector<unsigned> job_sm_ids_;
-
+  // MIG startup configuration (fixed for the lifetime of the daemon)
+  bool mig_enabled_ = false;
+  std::vector<std::vector<unsigned>> mig_slice_sms_;
+  std::vector<std::string> mig_slice_profiles_;
   // -------------------------------------------------------------------------
   // Multi-job daemon state
   // -------------------------------------------------------------------------

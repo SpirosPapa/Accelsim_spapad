@@ -1046,7 +1046,17 @@ class watchpoint_event {
 class warp_inst_t; // forward decl
 
 class gpgpu_sim : public gpgpu_t {
+ private:
+  std::unordered_map<unsigned, std::string> m_kernel_log_files;
  public:
+
+ //my addition
+  void register_kernel_log_file(unsigned kernel_uid, const std::string &path);
+  void unregister_kernel_log_file(unsigned kernel_uid);
+  void append_kernel_log_line(unsigned kernel_uid, const std::string &line);
+  void append_kernel_logf(unsigned kernel_uid, const char *fmt, ...);
+
+
   gpgpu_sim(const gpgpu_sim_config &config, gpgpu_context *ctx);
 
   long long get_gpu_sim_cycle() const        { return (long long)gpu_sim_cycle; }
@@ -1328,6 +1338,61 @@ class gpgpu_sim : public gpgpu_t {
   unsigned kernel_uid_from_smid(unsigned sid) const;
   void bind_kernel_to_allowed_sms(const kernel_info_t *k);
   void unbind_kernel_from_sms(unsigned kid);
+  // ---------------- MIG slicing ----------------
+struct mig_slice_desc_t {
+    unsigned id = 0;
+    std::string name;
+
+    // Global resources owned by this slice
+    std::vector<unsigned> sms;
+    std::vector<unsigned> mem_partitions;   // source of truth
+    std::vector<unsigned> sub_partitions;   // derived from mem_partitions
+
+    // Fast membership masks
+    std::vector<bool> sm_mask;
+    std::vector<bool> mem_mask;
+    std::vector<bool> sub_mask;
+
+    // Slice-local address mapping:
+    // same decode logic as the full GPU, but with fewer visible channels
+    linear_to_raw_address_translation local_address_mapping;
+
+    unsigned local_n_mem = 0;
+    unsigned local_n_sub_partition_per_channel = 0;
+  };
+
+  // Slice table and kernel -> slice ownership
+  std::vector<mig_slice_desc_t> m_mig_slices;
+  std::unordered_map<unsigned, unsigned> m_kernel_to_slice_id;
+  // Per-kernel global address-space offset (for job isolation)
+  std::unordered_map<unsigned, new_addr_type> m_kernel_global_offset;
+
+  bool mig_enabled() const;
+
+  const mig_slice_desc_t *get_slice(unsigned slice_id) const;
+  void register_mig_slice(const mig_slice_desc_t &s);
+
+  void register_kernel_slice(unsigned kid, unsigned slice_id);
+  unsigned kernel_slice_id(unsigned kid) const;
+
+  void register_kernel_global_offset(unsigned kid, new_addr_type off);
+  void unregister_kernel_global_offset(unsigned kid);
+  new_addr_type kernel_global_offset(unsigned kid) const;
+  new_addr_type apply_kernel_global_offset(unsigned kid, new_addr_type addr) const;
+
+  void apply_slice_sm_mask_to_kernel(kernel_info_t *k, unsigned slice_id);
+
+  bool kernel_can_access_sub_partition(unsigned kid,
+                                       unsigned global_spid) const;
+
+  bool kernel_can_access_mem_partition(unsigned kid,
+                                       unsigned mem_pid) const;
+  bool slice_decode_for_kernel(unsigned kid, new_addr_type addr,
+                              unsigned *global_chip,
+                              unsigned *global_spid) const;
+  unsigned remap_sub_partition_for_kernel(unsigned kid,
+                                          unsigned requested_global_spid) const;
+  // ---------------- MIG slicing ----------------
 
 
   void init();
@@ -1387,8 +1452,9 @@ class gpgpu_sim : public gpgpu_t {
                       const char *single_kernel_name,
                       int single_kernel_uid);
   void dump_pipeline(int mask, int s, int m) const;
-  void perf_memcpy_to_gpu(size_t dst_start_addr, size_t count);
-
+  void perf_memcpy_to_gpu(size_t dst_start_addr, size_t count,
+                          new_addr_type job_offset = 0,
+                          int slice_id = -1);
   // The next three functions added to be used by the functional simulation
   // function
 
@@ -1705,8 +1771,9 @@ class sst_gpgpu_sim : public gpgpu_sim {
    * @param dst_start_addr
    * @param count
    */
-  void perf_memcpy_to_gpu(size_t dst_start_addr, size_t count) {};
-
+  void perf_memcpy_to_gpu(size_t dst_start_addr, size_t count,
+                          new_addr_type job_offset = 0,
+                          int slice_id = -1) {};
   /**
    * @brief Check if the SST config matches up with the
    *        gpgpusim.config in core number
